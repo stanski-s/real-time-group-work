@@ -3,13 +3,14 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
-    "types": ["node"]
+    "moduleResolution": "node10",
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*.ts", "../../libs/database/prisma.ts"],
-  "exclude": [
+  "include": [
     "jest.config.ts",
     "jest.config.cts",
+    "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/**/*.test.ts"
+    "src/**/*.d.ts"
   ]
 }

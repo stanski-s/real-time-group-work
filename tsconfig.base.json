@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@slack-clone/shared-types": ["libs/shared-types/src/index.ts"]
+      "@slack-clone/shared-types": ["libs/shared-types/src/index.ts"],
+      "@slack-clone/database": ["libs/database/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
