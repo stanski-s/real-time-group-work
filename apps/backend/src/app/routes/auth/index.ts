@@ -1,0 +1,68 @@
+import { FastifyInstance } from 'fastify';
+import * as argon2 from 'argon2';
+
+export default async function (fastify: FastifyInstance) {
+  fastify.post('/register', async function (request, reply) {
+    const { email, password, name } = request.body as any;
+
+    const existingUser = await fastify.db.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return reply.code(400).send({ error: 'User already exists' });
+    }
+
+    const hashedPassword = await argon2.hash(password);
+
+    const user = await fastify.db.user.create({
+      data: { email, password: hashedPassword, name },
+    });
+
+    const token = fastify.jwt.sign({ id: user.id, email: user.email });
+
+    reply
+      .setCookie('token', token, {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      })
+      .code(201)
+      .send({ user: { id: user.id, email: user.email, name: user.name } });
+  });
+
+  fastify.post('/login', async function (request, reply) {
+    const { email, password } = request.body as any;
+
+    const user = await fastify.db.user.findUnique({ where: { email } });
+    if (!user) {
+      return reply.code(401).send({ error: 'Invalid credentials' });
+    }
+
+    const isMatch = await argon2.verify(user.password, password);
+    if (!isMatch) {
+      return reply.code(401).send({ error: 'Invalid credentials' });
+    }
+
+    const token = fastify.jwt.sign({ id: user.id, email: user.email });
+
+    reply
+      .setCookie('token', token, {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      })
+      .send({ user: { id: user.id, email: user.email, name: user.name } });
+  });
+
+  fastify.post('/logout', async function (request, reply) {
+    reply.clearCookie('token', { path: '/' }).send({ success: true });
+  });
+
+  fastify.get('/me', { preValidation: [fastify.authenticate] }, async function (request, reply) {
+    const user = await fastify.db.user.findUnique({
+      where: { id: request.user.id },
+      select: { id: true, email: true, name: true, image: true }
+    });
+    return { user };
+  });
+}
