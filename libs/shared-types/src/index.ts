@@ -11,3 +11,24 @@ export interface UserResponse {
   email: string;
   name: string | null;
 }
+
+export interface CreateWorkspaceDto {
+  name: string;
+}
+
+export interface WorkspaceResponse {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface CreateChannelDto {
+  name: string;
+  workspaceId: string;
+}
+
+export interface ChannelResponse {
+  id: string;
+  name: string;
+  workspaceId: string;
+}
