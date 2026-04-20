@@ -71,13 +71,16 @@
     "@fastify/sensible": "~6.0.2",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+    "@tanstack/react-query": "^5.99.2",
     "argon2": "^0.44.0",
     "axios": "^1.6.0",
     "fastify": "~5.2.1",
     "fastify-plugin": "~5.0.1",
+    "lucide-react": "^1.8.0",
     "next": "~16.1.6",
     "pg": "^8.20.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.12"
   }
 }
