@@ -37,8 +37,20 @@ export default fp(async (fastify) => {
     }
   });
 
+  const onlineUsers = new Map<string, Set<string>>();
+
   io.on('connection', (socket) => {
     fastify.log.info(`Socket connected: ${socket.id}`);
+    
+    const userId = (socket as any).user.id;
+
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+      socket.broadcast.emit('user_online', userId);
+    }
+    onlineUsers.get(userId)!.add(socket.id);
+
+    socket.emit('online_users_list', Array.from(onlineUsers.keys()));
     
     socket.on('joinChannel', (channelId: string) => {
       socket.join(`channel_${channelId}`);
@@ -62,6 +74,15 @@ export default fp(async (fastify) => {
 
     socket.on('disconnect', () => {
       fastify.log.info(`Socket disconnected: ${socket.id}`);
+      
+      const userSockets = onlineUsers.get(userId);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          onlineUsers.delete(userId);
+          socket.broadcast.emit('user_offline', userId);
+        }
+      }
     });
   });
 

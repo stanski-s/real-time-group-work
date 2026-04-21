@@ -11,15 +11,18 @@ import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
 import DirectMessageList from '../components/Chat/DirectMessageList';
 import DirectMessageInput from '../components/Chat/DirectMessageInput';
+import ThreadSidebar from '../components/Chat/ThreadSidebar';
 
 export default function Index() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const { connect, disconnect } = useSocketStore();
+  const { connect, disconnect, onlineUsers } = useSocketStore();
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeDmUserId, setActiveDmUserId] = useState<string | null>(null);
+  const [activeThreadMessage, setActiveThreadMessage] = useState<any>(null);
+  const [activeThreadType, setActiveThreadType] = useState<'message' | 'directMessage' | null>(null);
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
 
@@ -196,6 +199,8 @@ export default function Index() {
                 onClick={() => {
                   setActiveChannelId(channel.id);
                   setActiveDmUserId(null);
+                  setActiveThreadMessage(null);
+                  setActiveThreadType(null);
                 }}
                 className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
                   activeChannel?.id === channel.id
@@ -258,19 +263,32 @@ export default function Index() {
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse">
-          {activeChannelId && <MessageList channelId={activeChannelId} />}
-          {activeDmUserId && activeWorkspace?.id && <DirectMessageList workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
+          {activeChannelId && <MessageList channelId={activeChannelId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('message'); }} />}
+          {activeDmUserId && activeWorkspace?.id && <DirectMessageList workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('directMessage'); }} />}
         </div>
 
         {activeChannelId && <MessageInput channelId={activeChannelId} />}
         {activeDmUserId && activeWorkspace?.id && <DirectMessageInput workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
       </div>
 
-      {/* Prawy Sidebar dla Członków */}
-      <div className="w-64 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
-        <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
-          <h2 className="font-bold text-white text-base">Członkowie zespołu</h2>
-        </div>
+      {/* Prawy Sidebar dla Członków LUB Wątku */}
+      {activeThreadMessage && activeThreadType ? (
+        <ThreadSidebar
+          message={activeThreadMessage}
+          entityType={activeThreadType}
+          channelId={activeChannelId || undefined}
+          workspaceId={activeWorkspaceId || undefined}
+          otherUserId={activeDmUserId || undefined}
+          onClose={() => {
+            setActiveThreadMessage(null);
+            setActiveThreadType(null);
+          }}
+        />
+      ) : (
+        <div className="w-64 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
+          <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
+            <h2 className="font-bold text-white text-base">Członkowie zespołu</h2>
+          </div>
         
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
           {activeWorkspace?.members?.map((m: any) => (
@@ -279,6 +297,8 @@ export default function Index() {
               onClick={() => {
                 setActiveChannelId(null);
                 setActiveDmUserId(m.userId);
+                setActiveThreadMessage(null);
+                setActiveThreadType(null);
               }}
               className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
             >
@@ -290,14 +310,15 @@ export default function Index() {
                     <span className="text-indigo-400 font-bold text-sm">{m.user.name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {/* W przyszłości tutaj kropka statusu Online */}
-                <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-gray-500 border-2 border-[#1a1d21]"></div>
+                {/* Kropka statusu Online/Offline */}
+                <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#1a1d21] transition-colors ${onlineUsers.includes(m.userId) ? 'bg-green-500' : 'bg-gray-500'}`}></div>
               </div>
               <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">{m.user.name}</span>
             </div>
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
