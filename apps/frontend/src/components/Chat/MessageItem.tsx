@@ -90,7 +90,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
             onClick={onReply}
             className="mt-2 text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
-            {msg._count!.replies} {msg._count!.replies === 1 ? 'odpowiedź' : 'odpowiedzi'}
+            {msg._count?.replies} {msg._count?.replies === 1 ? 'odpowiedź' : 'odpowiedzi'}
           </button>
         )}
       </div>

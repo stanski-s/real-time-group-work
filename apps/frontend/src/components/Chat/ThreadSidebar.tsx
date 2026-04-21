@@ -6,7 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/axios';
 import { useState, useEffect, useRef } from 'react';
 import { useSocketStore } from '../../store/socket';
-import { useAuthStore } from '../../store/auth';
 import { Message } from '../../types';
 
 interface ThreadSidebarProps {
@@ -30,7 +29,6 @@ export default function ThreadSidebar({
   const [content, setContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocketStore();
-  const { user } = useAuthStore();
 
   const { data: replies = [], isLoading } = useQuery({
     queryKey: ['thread', message.id],
@@ -73,8 +71,6 @@ export default function ThreadSidebar({
         if (!old) return old;
         return old.map((m) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
       });
-      if (message.id === entityId) {
-      }
     };
 
     const handleReactionRemoved = ({ entityId, id }: { entityId: string, id: string }) => {

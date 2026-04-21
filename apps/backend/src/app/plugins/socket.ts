@@ -52,7 +52,7 @@ export default fp(async (fastify) => {
       onlineUsers.set(userId, new Set());
       socket.broadcast.emit('user_online', userId);
     }
-    onlineUsers.get(userId)!.add(socket.id);
+    onlineUsers.get(userId)?.add(socket.id);
 
     socket.emit('online_users_list', Array.from(onlineUsers.keys()));
     
