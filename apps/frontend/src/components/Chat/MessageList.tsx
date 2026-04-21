@@ -4,12 +4,14 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../../store/socket';
 import api from '../../lib/axios';
+import MessageItem from './MessageItem';
 
 interface MessageListProps {
   channelId: string;
+  onReply?: (msg: any) => void;
 }
 
-export default function MessageList({ channelId }: MessageListProps) {
+export default function MessageList({ channelId, onReply }: MessageListProps) {
   const queryClient = useQueryClient();
   const { socket, joinChannel, leaveChannel } = useSocketStore();
 
@@ -34,10 +36,37 @@ export default function MessageList({ channelId }: MessageListProps) {
       });
     };
 
+    const handleReactionAdded = ({ entityId, emoji, userId, id }: any) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((m: any) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
+      });
+    };
+
+    const handleReactionRemoved = ({ entityId, id }: any) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((m: any) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r: any) => r.id !== id) } : m);
+      });
+    };
+
+    const handleNewThreadReply = (message: any) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((m: any) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
+      });
+    };
+
     socket.on('new_message', handleNewMessage);
+    socket.on('reaction_added', handleReactionAdded);
+    socket.on('reaction_removed', handleReactionRemoved);
+    socket.on('new_thread_reply', handleNewThreadReply);
 
     return () => {
       socket.off('new_message', handleNewMessage);
+      socket.off('reaction_added', handleReactionAdded);
+      socket.off('reaction_removed', handleReactionRemoved);
+      socket.off('new_thread_reply', handleNewThreadReply);
       leaveChannel(channelId);
     };
   }, [channelId, socket, joinChannel, leaveChannel, queryClient]);
@@ -47,24 +76,7 @@ export default function MessageList({ channelId }: MessageListProps) {
   return (
     <div className="space-y-6">
       {messages.map((msg: any) => (
-        <div key={msg.id} className="flex items-start gap-4 hover:bg-gray-800/30 p-2 rounded-lg transition-colors">
-          <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-            {msg.author.image ? (
-              <img src={msg.author.image} alt={msg.author.name} className="h-full w-full rounded-xl object-cover" />
-            ) : (
-              <span className="text-indigo-400 font-bold">{msg.author.name?.charAt(0).toUpperCase() || '?'}</span>
-            )}
-          </div>
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-bold text-gray-200">{msg.author.name}</span>
-              <span className="text-xs text-gray-500">
-                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <p className="text-gray-300 mt-1">{msg.content}</p>
-          </div>
-        </div>
+        <MessageItem key={msg.id} msg={msg} entityType="message" onReply={onReply ? () => onReply(msg) : undefined} />
       ))}
     </div>
   );

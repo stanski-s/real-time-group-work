@@ -63,11 +63,15 @@ model Message {
 }
 
 model Reaction {
-  id        String  @id @default(cuid())
-  emoji     String
-  messageId String
-  message   Message @relation(fields: [messageId], references: [id])
-  userId    String
+  id               String         @id @default(cuid())
+  emoji            String
+  userId           String
+  
+  messageId        String?
+  message          Message?       @relation(fields: [messageId], references: [id])
+  
+  directMessageId  String?
+  directMessage    DirectMessage? @relation(fields: [directMessageId], references: [id])
 }
 
 model DirectMessage {
@@ -83,4 +87,10 @@ model DirectMessage {
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  parentId  String?
+  parent    DirectMessage?  @relation("DirectThread", fields: [parentId], references: [id])
+  replies   DirectMessage[] @relation("DirectThread")
+
+  reactions Reaction[]
 }
