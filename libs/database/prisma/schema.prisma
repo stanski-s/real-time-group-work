@@ -14,6 +14,8 @@ model User {
   image     String?
   messages  Message[]
   memberships Member[]
+  sentDMs      DirectMessage[] @relation("SentDMs")
+  receivedDMs  DirectMessage[] @relation("ReceivedDMs")
 }
 
 model Workspace {
@@ -22,6 +24,7 @@ model Workspace {
   slug     String    @unique
   members  Member[]
   channels Channel[]
+  directMessages DirectMessage[]
 }
 
 model Member {
@@ -65,4 +68,19 @@ model Reaction {
   messageId String
   message   Message @relation(fields: [messageId], references: [id])
   userId    String
+}
+
+model DirectMessage {
+  id          String   @id @default(cuid())
+  content     String
+  createdAt   DateTime @default(now())
+  
+  authorId    String
+  author      User     @relation("SentDMs", fields: [authorId], references: [id])
+  
+  receiverId  String
+  receiver    User     @relation("ReceivedDMs", fields: [receiverId], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }

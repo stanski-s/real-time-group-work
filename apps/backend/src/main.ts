@@ -25,6 +25,7 @@ import authRoutes from './app/routes/auth';
 import workspacesRoutes from './app/routes/workspaces';
 import channelsRoutes from './app/routes/channels';
 import messagesRoutes from './app/routes/messages';
+import dmsRoutes from './app/routes/dms';
 
 async function bootstrap() {
   await server.register(prismaPlugin);
@@ -35,6 +36,7 @@ async function bootstrap() {
   await server.register(workspacesRoutes, { prefix: '/api/workspaces' });
   await server.register(channelsRoutes, { prefix: '/api/channels' });
   await server.register(messagesRoutes, { prefix: '/api/messages' });
+  await server.register(dmsRoutes, { prefix: '/api/dms' });
 
   try {
     await server.listen({ port, host });

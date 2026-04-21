@@ -50,6 +50,16 @@ export default fp(async (fastify) => {
       fastify.log.info(`Socket ${socket.id} left channel_${channelId}`);
     });
 
+    socket.on('joinDm', (roomId: string) => {
+      socket.join(`dm_${roomId}`);
+      fastify.log.info(`Socket ${socket.id} joined dm_${roomId}`);
+    });
+
+    socket.on('leaveDm', (roomId: string) => {
+      socket.leave(`dm_${roomId}`);
+      fastify.log.info(`Socket ${socket.id} left dm_${roomId}`);
+    });
+
     socket.on('disconnect', () => {
       fastify.log.info(`Socket disconnected: ${socket.id}`);
     });

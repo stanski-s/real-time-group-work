@@ -9,6 +9,8 @@ import api from '../lib/axios';
 import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus } from 'lucide-react';
 import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
+import DirectMessageList from '../components/Chat/DirectMessageList';
+import DirectMessageInput from '../components/Chat/DirectMessageInput';
 
 export default function Index() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function Index() {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [activeDmUserId, setActiveDmUserId] = useState<string | null>(null);
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
 
@@ -190,7 +193,10 @@ export default function Index() {
             {activeWorkspace?.channels?.map((channel: any) => (
               <button 
                 key={channel.id}
-                onClick={() => setActiveChannelId(channel.id)}
+                onClick={() => {
+                  setActiveChannelId(channel.id);
+                  setActiveDmUserId(null);
+                }}
                 className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
                   activeChannel?.id === channel.id
                     ? 'bg-indigo-500/10 text-indigo-300'
@@ -232,15 +238,32 @@ export default function Index() {
       {/* Główne okno czatu */}
       <div className="flex flex-1 flex-col bg-[#1a1d21]">
         <div className="flex h-14 items-center border-b border-gray-800/50 px-6 shadow-sm">
-          <Hash className="h-5 w-5 text-gray-400 mr-2" />
-          <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
+          {activeChannelId ? (
+            <>
+              <Hash className="h-5 w-5 text-gray-400 mr-2" />
+              <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
+            </>
+          ) : activeDmUserId ? (
+            <>
+              <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center mr-2">
+                <span className="text-indigo-400 font-bold text-xs">
+                  {activeWorkspace?.members?.find((m: any) => m.userId === activeDmUserId)?.user.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <h2 className="font-bold text-white text-base">
+                {activeWorkspace?.members?.find((m: any) => m.userId === activeDmUserId)?.user.name} {activeDmUserId === user?.id && '(Ty)'}
+              </h2>
+            </>
+          ) : null}
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse">
-          {activeChannel && <MessageList channelId={activeChannel.id} />}
+          {activeChannelId && <MessageList channelId={activeChannelId} />}
+          {activeDmUserId && activeWorkspace?.id && <DirectMessageList workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
         </div>
 
-        {activeChannel && <MessageInput channelId={activeChannel.id} />}
+        {activeChannelId && <MessageInput channelId={activeChannelId} />}
+        {activeDmUserId && activeWorkspace?.id && <DirectMessageInput workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
       </div>
 
       {/* Prawy Sidebar dla Członków */}
@@ -251,7 +274,14 @@ export default function Index() {
         
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
           {activeWorkspace?.members?.map((m: any) => (
-            <div key={m.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group">
+            <div 
+              key={m.id} 
+              onClick={() => {
+                setActiveChannelId(null);
+                setActiveDmUserId(m.userId);
+              }}
+              className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
+            >
               <div className="relative">
                 <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                   {m.user.image ? (
