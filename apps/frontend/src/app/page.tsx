@@ -3,21 +3,31 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../store/auth';
+import { useSocketStore } from '../store/socket';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../lib/axios';
 import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2 } from 'lucide-react';
+import MessageList from '../components/Chat/MessageList';
+import MessageInput from '../components/Chat/MessageInput';
 
 export default function Index() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
+  const { connect, disconnect } = useSocketStore();
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
+    } else {
+      connect();
     }
-  }, [user, router]);
+    return () => {
+      disconnect();
+    };
+  }, [user, router, connect, disconnect]);
 
   const { data: workspaces = [], isLoading, refetch } = useQuery({
     queryKey: ['workspaces'],
@@ -58,6 +68,9 @@ export default function Index() {
   }
 
   const activeWorkspace = workspaces.find((w: any) => w.id === activeWorkspaceId) || workspaces[0];
+  
+  const activeChannel = activeWorkspace?.channels?.find((c: any) => c.id === activeChannelId) 
+    || activeWorkspace?.channels?.[0];
 
   if (workspaces.length === 0) {
     return (
@@ -138,11 +151,20 @@ export default function Index() {
           </div>
           
           <div className="space-y-[2px]">
-            {/* Tutaj domyślnie wyświetlimy kanał general, który tworzy się z workspacem */}
-            <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium bg-indigo-500/10 text-indigo-300">
-              <Hash className="h-4 w-4 opacity-70" />
-              <span>general</span>
-            </button>
+            {activeWorkspace?.channels?.map((channel: any) => (
+              <button 
+                key={channel.id}
+                onClick={() => setActiveChannelId(channel.id)}
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
+                  activeChannel?.id === channel.id
+                    ? 'bg-indigo-500/10 text-indigo-300'
+                    : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                }`}
+              >
+                <Hash className="h-4 w-4 opacity-70" />
+                <span>{channel.name}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -151,32 +173,14 @@ export default function Index() {
       <div className="flex flex-1 flex-col bg-[#1a1d21]">
         <div className="flex h-14 items-center border-b border-gray-800/50 px-6 shadow-sm">
           <Hash className="h-5 w-5 text-gray-400 mr-2" />
-          <h2 className="font-bold text-white text-base">general</h2>
+          <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
         </div>
         
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-800 shadow-inner">
-              <MessageSquare className="h-10 w-10 text-gray-500" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-gray-300">To jest początek kanału #general</h3>
-              <p className="text-sm mt-1">Czat i Websockety dodamy w kolejnym kroku!</p>
-            </div>
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse">
+          {activeChannel && <MessageList channelId={activeChannel.id} />}
         </div>
 
-        {/* Pole wpisywania */}
-        <div className="p-4 bg-[#1a1d21]">
-          <div className="rounded-xl border border-gray-600 bg-[#222529] focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-400 transition-all shadow-sm">
-            <input
-              type="text"
-              disabled
-              placeholder="Napisz wiadomość na #general (wkrótce...)"
-              className="w-full bg-transparent px-4 py-3 text-white placeholder-gray-500 focus:outline-none disabled:opacity-50 text-[15px]"
-            />
-          </div>
-        </div>
+        {activeChannel && <MessageInput channelId={activeChannel.id} />}
       </div>
     </div>
   );

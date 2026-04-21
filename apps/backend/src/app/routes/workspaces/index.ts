@@ -13,6 +13,9 @@ export default async function (fastify: FastifyInstance) {
           some: { userId },
         },
       },
+      include: {
+        channels: true,
+      }
     });
 
     return { workspaces };

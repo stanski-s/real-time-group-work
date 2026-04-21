@@ -20,17 +20,21 @@ server.register(require('@fastify/cors'), {
 
 import authPlugin from './app/plugins/auth';
 import prismaPlugin from './app/plugins/prisma';
+import socketPlugin from './app/plugins/socket';
 import authRoutes from './app/routes/auth';
 import workspacesRoutes from './app/routes/workspaces';
 import channelsRoutes from './app/routes/channels';
+import messagesRoutes from './app/routes/messages';
 
 async function bootstrap() {
   await server.register(prismaPlugin);
   await server.register(authPlugin);
+  await server.register(socketPlugin);
 
   await server.register(authRoutes, { prefix: '/api/auth' });
   await server.register(workspacesRoutes, { prefix: '/api/workspaces' });
   await server.register(channelsRoutes, { prefix: '/api/channels' });
+  await server.register(messagesRoutes, { prefix: '/api/messages' });
 
   try {
     await server.listen({ port, host });
