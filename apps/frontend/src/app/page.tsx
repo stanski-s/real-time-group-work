@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/auth';
 import { useSocketStore } from '../store/socket';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../lib/axios';
-import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2 } from 'lucide-react';
+import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus } from 'lucide-react';
 import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
 
@@ -137,9 +137,21 @@ export default function Index() {
       <div className="w-64 flex-shrink-0 bg-[#1a1d21] border-r border-gray-800 flex flex-col z-10 shadow-lg">
         <div className="flex h-14 items-center justify-between border-b border-gray-800/50 px-4 hover:bg-gray-800/30 cursor-pointer transition-colors">
           <h2 className="font-bold text-white text-lg truncate">{activeWorkspace?.name}</h2>
-          <button className="text-gray-400 hover:text-white transition-colors">
-            <Settings className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(`http://localhost:3001/join/${activeWorkspace?.id}`);
+                alert('Skopiowano link z zaproszeniem do schowka!');
+              }}
+              title="Zaproś znajomych" 
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <UserPlus className="h-4 w-4" />
+            </button>
+            <button className="text-gray-400 hover:text-white transition-colors">
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto py-4 px-3">

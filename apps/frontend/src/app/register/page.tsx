@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
@@ -14,6 +14,8 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
   const setUser = useAuthStore((state) => state.setUser);
 
   const registerMutation = useMutation({
@@ -23,7 +25,7 @@ export default function RegisterPage() {
     },
     onSuccess: (data) => {
       setUser(data.user);
-      router.push('/');
+      router.push(redirectParam || '/');
     },
     onError: (err: any) => {
       setError(err.response?.data?.error || 'Wystąpił błąd podczas rejestracji.');
@@ -46,7 +48,7 @@ export default function RegisterPage() {
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">Stwórz konto</h2>
           <p className="mt-2 text-sm text-gray-400">
             Masz już konto?{' '}
-            <Link href="/login" className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+            <Link href={redirectParam ? `/login?redirect=${redirectParam}` : '/login'} className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
               Zaloguj się tutaj
             </Link>
           </p>

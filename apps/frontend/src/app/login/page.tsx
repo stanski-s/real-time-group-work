@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
   const setUser = useAuthStore((state) => state.setUser);
 
   const loginMutation = useMutation({
@@ -22,7 +24,7 @@ export default function LoginPage() {
     },
     onSuccess: (data) => {
       setUser(data.user);
-      router.push('/');
+      router.push(redirectParam || '/');
     },
     onError: () => {
       setError('Nieprawidłowe dane logowania. Spróbuj ponownie.');
@@ -45,7 +47,7 @@ export default function LoginPage() {
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">Zaloguj się</h2>
           <p className="mt-2 text-sm text-gray-400">
             Lub{' '}
-            <Link href="/register" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+            <Link href={redirectParam ? `/register?redirect=${redirectParam}` : '/register'} className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
               utwórz nowe konto za darmo
             </Link>
           </p>

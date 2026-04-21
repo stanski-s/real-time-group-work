@@ -78,4 +78,38 @@ export default async function (fastify: FastifyInstance) {
 
     return { workspace };
   });
+
+  fastify.get('/:id/preview', async function (request, reply) {
+    const { id } = request.params as { id: string };
+    const workspace = await fastify.db.workspace.findUnique({
+      where: { id },
+      select: { id: true, name: true }
+    });
+    
+    if (!workspace) {
+      return reply.code(404).send({ error: 'Workspace not found' });
+    }
+    return { workspace };
+  });
+
+  fastify.post('/:id/join', async function (request, reply) {
+    const { id } = request.params as { id: string };
+    const userId = request.user.id;
+
+    const existingMember = await fastify.db.member.findFirst({
+      where: { workspaceId: id, userId }
+    });
+
+    if (!existingMember) {
+      await fastify.db.member.create({
+        data: {
+          workspaceId: id,
+          userId,
+          role: 'member'
+        }
+      });
+    }
+
+    return { success: true };
+  });
 }
