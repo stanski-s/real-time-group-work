@@ -15,6 +15,11 @@ export default async function (fastify: FastifyInstance) {
       },
       include: {
         channels: true,
+        members: {
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true } }
+          }
+        }
       }
     });
 
