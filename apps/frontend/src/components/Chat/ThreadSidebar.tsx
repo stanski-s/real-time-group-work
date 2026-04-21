@@ -27,6 +27,8 @@ export default function ThreadSidebar({
 }: ThreadSidebarProps) {
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocketStore();
 
@@ -43,13 +45,25 @@ export default function ThreadSidebar({
 
   const sendReply = useMutation({
     mutationFn: async () => {
+      let fileData = null;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        fileData = uploadRes.data;
+      }
       const url = entityType === 'message' 
         ? `/messages/${channelId}` 
         : `/dms/${workspaceId}/${otherUserId}`;
-      await api.post(url, { content, parentId: message.id });
+      await api.post(url, { 
+        content, 
+        parentId: message.id,
+        ...(fileData ? { fileUrl: fileData.fileUrl, fileType: fileData.fileType, fileName: fileData.fileName } : {})
+      });
     },
     onSuccess: () => {
       setContent('');
+      setSelectedFile(null);
     }
   });
 
@@ -103,7 +117,8 @@ export default function ThreadSidebar({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || sendReply.isPending) return;
+    if (!content.trim() && !selectedFile) return;
+    if (sendReply.isPending) return;
     sendReply.mutate();
   };
 
@@ -134,7 +149,29 @@ export default function ThreadSidebar({
       </div>
 
       <div className="p-4 border-t border-gray-800">
-        <form onSubmit={handleSubmit} className="relative rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+        {selectedFile && (
+          <div className="flex items-center gap-2 mb-2 p-2 bg-gray-800 rounded-lg w-max max-w-full overflow-hidden border border-gray-700">
+            <span className="text-sm text-gray-300 truncate">{selectedFile.name}</span>
+            <button type="button" onClick={() => setSelectedFile(null)} className="ml-2 text-gray-400 hover:text-red-400">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="relative rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 transition-all flex items-end">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="mb-1 ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+            title="Załącz plik"
+          >
+            <span className="text-xl leading-none font-bold">+</span>
+          </button>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -150,7 +187,7 @@ export default function ThreadSidebar({
           />
           <button
             type="submit"
-            disabled={!content.trim() || sendReply.isPending}
+            disabled={(!content.trim() && !selectedFile) || sendReply.isPending}
             className="absolute bottom-2 right-2 rounded-lg p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
           >
             <SendHorizontal className="h-4 w-4" />

@@ -55,7 +55,7 @@ export default async function (fastify: FastifyInstance) {
 
   fastify.post('/:workspaceId/:userId', async function (request, reply) {
     const { workspaceId, userId: otherUserId } = request.params as { workspaceId: string, userId: string };
-    const { content, parentId } = request.body as { content: string, parentId?: string };
+    const { content, parentId, fileUrl, fileType, fileName } = request.body as { content: string, parentId?: string, fileUrl?: string, fileType?: string, fileName?: string };
     const myId = request.user.id;
 
     const isMember = await fastify.db.member.findFirst({
@@ -72,7 +72,10 @@ export default async function (fastify: FastifyInstance) {
         workspaceId,
         authorId: myId,
         receiverId: otherUserId,
-        parentId: parentId || null
+        parentId: parentId || null,
+        fileUrl,
+        fileType,
+        fileName
       },
       include: {
         author: {

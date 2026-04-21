@@ -36,15 +36,18 @@ export default async function (fastify: FastifyInstance) {
 
   fastify.post('/:channelId', async function (request, reply) {
     const { channelId } = request.params as { channelId: string };
-    const { content, parentId } = request.body as { content: string, parentId?: string };
-    const user = request.user as any;
+    const { content, parentId, fileUrl, fileType, fileName } = request.body as { content: string, parentId?: string, fileUrl?: string, fileType?: string, fileName?: string };
+    const user = request.user as { id: string, name: string, email: string };
 
     const message = await fastify.db.message.create({
       data: {
         content,
         channelId,
         authorId: user.id,
-        parentId: parentId || null
+        parentId: parentId || null,
+        fileUrl,
+        fileType,
+        fileName
       },
       include: { 
         author: { select: { id: true, name: true, email: true, image: true } },

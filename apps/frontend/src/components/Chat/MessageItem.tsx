@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquareReply } from 'lucide-react';
+import { MessageSquareReply, FileText, Download } from 'lucide-react';
 import ReactionMenu from './ReactionMenu';
 import { useAuthStore } from '../../store/auth';
 import { useMutation } from '@tanstack/react-query';
@@ -60,6 +60,37 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
           </span>
         </div>
         <p className="text-gray-300 mt-1 break-words">{msg.content}</p>
+        
+        {/* Renderowanie załącznika */}
+        {msg.fileUrl && (
+          <div className="mt-2 rounded-lg overflow-hidden max-w-sm border border-gray-700 bg-gray-800/50">
+            {msg.fileType?.startsWith('image/') ? (
+              <a href={`http://localhost:3000${msg.fileUrl}`} target="_blank" rel="noopener noreferrer" className="block cursor-zoom-in">
+                <img 
+                  src={`http://localhost:3000${msg.fileUrl}`} 
+                  alt={msg.fileName || 'Załącznik'} 
+                  className="w-full h-auto max-h-64 object-contain bg-gray-900"
+                />
+              </a>
+            ) : (
+              <a 
+                href={`http://localhost:3000${msg.fileUrl}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-colors group"
+              >
+                <div className="h-10 w-10 rounded bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-200 truncate">{msg.fileName}</p>
+                  <p className="text-xs text-gray-500 uppercase">{msg.fileType?.split('/')[1] || 'PLIK'}</p>
+                </div>
+                <Download className="h-4 w-4 text-gray-500 group-hover:text-white" />
+              </a>
+            )}
+          </div>
+        )}
         
         {/* Reactions List */}
         {Object.keys(groupedReactions).length > 0 && (

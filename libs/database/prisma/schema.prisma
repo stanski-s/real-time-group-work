@@ -60,6 +60,10 @@ model Message {
   replies   Message[] @relation("Thread")
 
   reactions Reaction[]
+
+  fileUrl   String?
+  fileType  String?
+  fileName  String?
 }
 
 model Reaction {
@@ -93,4 +97,8 @@ model DirectMessage {
   replies   DirectMessage[] @relation("DirectThread")
 
   reactions Reaction[]
+
+  fileUrl   String?
+  fileType  String?
+  fileName  String?
 }

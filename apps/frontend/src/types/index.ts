@@ -52,6 +52,9 @@ export interface Message {
   receiverId?: string;
   workspaceId?: string;
   parentId?: string | null;
+  fileUrl?: string | null;
+  fileType?: string | null;
+  fileName?: string | null;
   createdAt: string;
   updatedAt: string;
   author: User;
