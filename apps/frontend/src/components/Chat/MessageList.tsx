@@ -5,10 +5,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../../store/socket';
 import api from '../../lib/axios';
 import MessageItem from './MessageItem';
+import { Message } from '../../types';
 
 interface MessageListProps {
   channelId: string;
-  onReply?: (msg: any) => void;
+  onReply?: (msg: Message) => void;
 }
 
 export default function MessageList({ channelId, onReply }: MessageListProps) {
@@ -28,32 +29,32 @@ export default function MessageList({ channelId, onReply }: MessageListProps) {
 
     joinChannel(channelId);
 
-    const handleNewMessage = (message: any) => {
-      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+    const handleNewMessage = (message: Message) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: Message[] | undefined) => {
         if (!oldData) return [message];
-        if (oldData.find((m: any) => m.id === message.id)) return oldData;
+        if (oldData.find((m) => m.id === message.id)) return oldData;
         return [...oldData, message];
       });
     };
 
-    const handleReactionAdded = ({ entityId, emoji, userId, id }: any) => {
-      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+    const handleReactionAdded = ({ entityId, emoji, userId, id }: { entityId: string, emoji: string, userId: string, id: string }) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: Message[] | undefined) => {
         if (!oldData) return oldData;
-        return oldData.map((m: any) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
+        return oldData.map((m) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
       });
     };
 
-    const handleReactionRemoved = ({ entityId, id }: any) => {
-      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+    const handleReactionRemoved = ({ entityId, id }: { entityId: string, id: string }) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: Message[] | undefined) => {
         if (!oldData) return oldData;
-        return oldData.map((m: any) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r: any) => r.id !== id) } : m);
+        return oldData.map((m) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r) => r.id !== id) } : m);
       });
     };
 
-    const handleNewThreadReply = (message: any) => {
-      queryClient.setQueryData(['messages', channelId], (oldData: any) => {
+    const handleNewThreadReply = (message: Message) => {
+      queryClient.setQueryData(['messages', channelId], (oldData: Message[] | undefined) => {
         if (!oldData) return oldData;
-        return oldData.map((m: any) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
+        return oldData.map((m) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
       });
     };
 
@@ -75,7 +76,7 @@ export default function MessageList({ channelId, onReply }: MessageListProps) {
 
   return (
     <div className="space-y-6">
-      {messages.map((msg: any) => (
+      {messages.map((msg: Message) => (
         <MessageItem key={msg.id} msg={msg} entityType="message" onReply={onReply ? () => onReply(msg) : undefined} />
       ))}
     </div>

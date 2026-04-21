@@ -1,10 +1,14 @@
 import fp from 'fastify-plugin';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 declare module 'fastify' {
   interface FastifyInstance {
     io: Server;
   }
+}
+
+interface AuthenticatedSocket extends Socket {
+  user: { id: string; email: string; name: string };
 }
 
 export default fp(async (fastify) => {
@@ -29,20 +33,20 @@ export default fp(async (fastify) => {
         return next(new Error('Authentication error'));
       }
 
-      const decoded = fastify.jwt.verify(token);
-      (socket as any).user = decoded;
+      const decoded = fastify.jwt.verify(token) as { id: string; email: string; name: string };
+      (socket as AuthenticatedSocket).user = decoded;
       next();
-    } catch (err) {
+    } catch {
       next(new Error('Authentication error'));
     }
   });
 
   const onlineUsers = new Map<string, Set<string>>();
 
-  io.on('connection', (socket) => {
+  io.on('connection', (socket: Socket) => {
     fastify.log.info(`Socket connected: ${socket.id}`);
     
-    const userId = (socket as any).user.id;
+    const userId = (socket as AuthenticatedSocket).user.id;
 
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());

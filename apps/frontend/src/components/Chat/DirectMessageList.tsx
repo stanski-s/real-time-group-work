@@ -6,11 +6,12 @@ import api from '../../lib/axios';
 import { useSocketStore } from '../../store/socket';
 import { useAuthStore } from '../../store/auth';
 import MessageItem from './MessageItem';
+import { Message } from '../../types';
 
 interface DirectMessageListProps {
   workspaceId: string;
   otherUserId: string;
-  onReply?: (msg: any) => void;
+  onReply?: (msg: Message) => void;
 }
 
 export default function DirectMessageList({ workspaceId, otherUserId, onReply }: DirectMessageListProps) {
@@ -35,37 +36,37 @@ export default function DirectMessageList({ workspaceId, otherUserId, onReply }:
 
     socket.emit('joinDm', `${workspaceId}_${roomId}`);
 
-    const handleNewDm = (newMessage: any) => {
+    const handleNewDm = (newMessage: Message) => {
       if (
         (newMessage.authorId === user.id && newMessage.receiverId === otherUserId) ||
         (newMessage.authorId === otherUserId && newMessage.receiverId === user.id)
       ) {
-        queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: any) => {
+        queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
           if (!old) return [newMessage];
-          if (old.some((m: any) => m.id === newMessage.id)) return old;
+          if (old.some((m) => m.id === newMessage.id)) return old;
           return [...old, newMessage];
         });
       }
     };
 
-    const handleReactionAdded = ({ entityId, emoji, userId, id }: any) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: any) => {
+    const handleReactionAdded = ({ entityId, emoji, userId, id }: { entityId: string, emoji: string, userId: string, id: string }) => {
+      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
-        return old.map((m: any) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
+        return old.map((m) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
       });
     };
 
-    const handleReactionRemoved = ({ entityId, id }: any) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: any) => {
+    const handleReactionRemoved = ({ entityId, id }: { entityId: string, id: string }) => {
+      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
-        return old.map((m: any) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r: any) => r.id !== id) } : m);
+        return old.map((m) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r) => r.id !== id) } : m);
       });
     };
 
-    const handleNewDmThreadReply = (message: any) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: any) => {
+    const handleNewDmThreadReply = (message: Message) => {
+      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
-        return old.map((m: any) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
+        return old.map((m) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
       });
     };
 
@@ -102,7 +103,7 @@ export default function DirectMessageList({ workspaceId, otherUserId, onReply }:
 
   return (
     <div className="space-y-6">
-      {messages.map((msg: any) => (
+      {messages.map((msg: Message) => (
         <MessageItem key={msg.id} msg={msg} entityType="directMessage" onReply={onReply ? () => onReply(msg) : undefined} />
       ))}
       <div ref={messagesEndRef} />

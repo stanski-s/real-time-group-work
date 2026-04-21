@@ -38,7 +38,7 @@ export default async function (fastify: FastifyInstance) {
     return { messages: messages.reverse() };
   });
 
-  fastify.get('/:workspaceId/thread/:messageId', async function (request, reply) {
+  fastify.get('/:workspaceId/thread/:messageId', async function (request) {
     const { workspaceId, messageId } = request.params as { workspaceId: string, messageId: string };
     
     const replies = await fastify.db.directMessage.findMany({

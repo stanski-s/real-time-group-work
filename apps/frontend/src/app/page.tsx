@@ -12,6 +12,7 @@ import MessageInput from '../components/Chat/MessageInput';
 import DirectMessageList from '../components/Chat/DirectMessageList';
 import DirectMessageInput from '../components/Chat/DirectMessageInput';
 import ThreadSidebar from '../components/Chat/ThreadSidebar';
+import { Workspace, Channel, Message, WorkspaceMember } from '../types';
 
 export default function Index() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function Index() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeDmUserId, setActiveDmUserId] = useState<string | null>(null);
-  const [activeThreadMessage, setActiveThreadMessage] = useState<any>(null);
+  const [activeThreadMessage, setActiveThreadMessage] = useState<Message | null>(null);
   const [activeThreadType, setActiveThreadType] = useState<'message' | 'directMessage' | null>(null);
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
@@ -77,9 +78,9 @@ export default function Index() {
       setActiveChannelId(data.channel.id);
       refetch();
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error(err);
-      alert(err.response?.data?.error || 'Wystąpił błąd przy tworzeniu kanału');
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy tworzeniu kanału');
       setIsCreatingChannel(false);
     }
   });
@@ -94,9 +95,9 @@ export default function Index() {
     );
   }
 
-  const activeWorkspace = workspaces.find((w: any) => w.id === activeWorkspaceId) || workspaces[0];
+  const activeWorkspace = workspaces.find((w: Workspace) => w.id === activeWorkspaceId) || workspaces[0];
   
-  const activeChannel = activeWorkspace?.channels?.find((c: any) => c.id === activeChannelId) 
+  const activeChannel = activeWorkspace?.channels?.find((c: Channel) => c.id === activeChannelId) 
     || activeWorkspace?.channels?.[0];
 
   if (workspaces.length === 0) {
@@ -139,7 +140,7 @@ export default function Index() {
       
       {/* Bardzo wąski pasek przełączania Workspaces */}
       <div className="w-16 flex-shrink-0 bg-gray-950 flex flex-col items-center py-4 gap-4 border-r border-gray-800/50 shadow-xl z-20">
-        {workspaces.map((w: any) => (
+        {workspaces.map((w: Workspace) => (
           <button
             key={w.id}
             onClick={() => setActiveWorkspaceId(w.id)}
@@ -193,7 +194,7 @@ export default function Index() {
           </div>
           
           <div className="space-y-[2px]">
-            {activeWorkspace?.channels?.map((channel: any) => (
+            {activeWorkspace?.channels?.map((channel: Channel) => (
               <button 
                 key={channel.id}
                 onClick={() => {
@@ -252,11 +253,11 @@ export default function Index() {
             <>
               <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center mr-2">
                 <span className="text-indigo-400 font-bold text-xs">
-                  {activeWorkspace?.members?.find((m: any) => m.userId === activeDmUserId)?.user.name.charAt(0).toUpperCase()}
+                  {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <h2 className="font-bold text-white text-base">
-                {activeWorkspace?.members?.find((m: any) => m.userId === activeDmUserId)?.user.name} {activeDmUserId === user?.id && '(Ty)'}
+                {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name} {activeDmUserId === user?.id && '(Ty)'}
               </h2>
             </>
           ) : null}
@@ -291,7 +292,7 @@ export default function Index() {
           </div>
         
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
-          {activeWorkspace?.members?.map((m: any) => (
+          {activeWorkspace?.members?.map((m: WorkspaceMember) => (
             <div 
               key={m.id} 
               onClick={() => {

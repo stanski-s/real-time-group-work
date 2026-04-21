@@ -7,9 +7,10 @@ import api from '../../lib/axios';
 import { useState, useEffect, useRef } from 'react';
 import { useSocketStore } from '../../store/socket';
 import { useAuthStore } from '../../store/auth';
+import { Message } from '../../types';
 
 interface ThreadSidebarProps {
-  message: any;
+  message: Message;
   entityType: 'message' | 'directMessage';
   channelId?: string;
   workspaceId?: string;
@@ -57,29 +58,29 @@ export default function ThreadSidebar({
   useEffect(() => {
     if (!socket) return;
     
-    const handleNewReply = (replyMsg: any) => {
+    const handleNewReply = (replyMsg: Message) => {
       if (replyMsg.parentId === message.id) {
-        queryClient.setQueryData(['thread', message.id], (old: any) => {
+        queryClient.setQueryData(['thread', message.id], (old: Message[] | undefined) => {
           if (!old) return [replyMsg];
-          if (old.some((m: any) => m.id === replyMsg.id)) return old;
+          if (old.some((m) => m.id === replyMsg.id)) return old;
           return [...old, replyMsg];
         });
       }
     };
 
-    const handleReactionAdded = ({ entityId, emoji, userId, id }: any) => {
-      queryClient.setQueryData(['thread', message.id], (old: any) => {
+    const handleReactionAdded = ({ entityId, emoji, userId, id }: { entityId: string, emoji: string, userId: string, id: string }) => {
+      queryClient.setQueryData(['thread', message.id], (old: Message[] | undefined) => {
         if (!old) return old;
-        return old.map((m: any) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
+        return old.map((m) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
       });
       if (message.id === entityId) {
       }
     };
 
-    const handleReactionRemoved = ({ entityId, id }: any) => {
-      queryClient.setQueryData(['thread', message.id], (old: any) => {
+    const handleReactionRemoved = ({ entityId, id }: { entityId: string, id: string }) => {
+      queryClient.setQueryData(['thread', message.id], (old: Message[] | undefined) => {
         if (!old) return old;
-        return old.map((m: any) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r: any) => r.id !== id) } : m);
+        return old.map((m) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r) => r.id !== id) } : m);
       });
     };
 
@@ -128,7 +129,7 @@ export default function ThreadSidebar({
           {isLoading ? (
             <div className="text-gray-500 text-sm">Ładowanie wątku...</div>
           ) : (
-            replies.map((reply: any) => (
+            replies.map((reply: Message) => (
               <MessageItem key={reply.id} msg={reply} entityType={entityType} />
             ))
           )}

@@ -5,9 +5,10 @@ import ReactionMenu from './ReactionMenu';
 import { useAuthStore } from '../../store/auth';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../lib/axios';
+import { Message, Reaction } from '../../types';
 
 interface MessageItemProps {
-  msg: any;
+  msg: Message;
   entityType: 'message' | 'directMessage';
   onReply?: () => void;
 }
@@ -17,7 +18,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
 
   const toggleReaction = useMutation({
     mutationFn: async (emoji: string) => {
-      const existing = msg.reactions?.find((r: any) => r.emoji === emoji && r.userId === user?.id);
+      const existing = msg.reactions?.find((r: Reaction) => r.emoji === emoji && r.userId === user?.id);
       if (existing) {
         await api.delete('/reactions', { data: { emoji, entityId: msg.id, entityType } });
       } else {
@@ -26,7 +27,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
     }
   });
 
-  const groupedReactions = msg.reactions?.reduce((acc: any, r: any) => {
+  const groupedReactions = msg.reactions?.reduce((acc: Record<string, string[]>, r: Reaction) => {
     acc[r.emoji] = acc[r.emoji] || [];
     acc[r.emoji].push(r.userId);
     return acc;
@@ -63,8 +64,8 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
         {/* Reactions List */}
         {Object.keys(groupedReactions).length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {Object.entries(groupedReactions).map(([emoji, userIds]: [string, any]) => {
-              const hasReacted = userIds.includes(user?.id);
+            {Object.entries(groupedReactions).map(([emoji, userIds]) => {
+              const hasReacted = userIds.includes(user?.id || '');
               return (
                 <button
                   key={emoji}
@@ -84,12 +85,12 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
         )}
 
         {/* Replies indicator */}
-        {msg._count?.replies > 0 && onReply && (
+        {(msg._count?.replies ?? 0) > 0 && onReply && (
           <button 
             onClick={onReply}
             className="mt-2 text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
-            {msg._count.replies} {msg._count.replies === 1 ? 'odpowiedź' : 'odpowiedzi'}
+            {msg._count!.replies} {msg._count!.replies === 1 ? 'odpowiedź' : 'odpowiedzi'}
           </button>
         )}
       </div>
