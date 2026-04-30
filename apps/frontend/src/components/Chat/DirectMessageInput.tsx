@@ -6,6 +6,7 @@ import api from '../../lib/axios';
 import { SendHorizontal, Paperclip, X } from 'lucide-react';
 
 export default function DirectMessageInput({ workspaceId, otherUserId }: { workspaceId: string, otherUserId: string }) {
+  const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

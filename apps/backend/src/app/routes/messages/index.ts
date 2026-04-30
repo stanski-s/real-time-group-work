@@ -3,7 +3,7 @@ import { FastifyInstance } from 'fastify';
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.get('/:channelId', async function (request, reply) {
+  fastify.get('/:channelId', async function (request) {
     const { channelId } = request.params as { channelId: string };
     
     const messages = await fastify.db.message.findMany({
@@ -19,7 +19,7 @@ export default async function (fastify: FastifyInstance) {
     return { messages };
   });
 
-  fastify.get('/:channelId/thread/:messageId', async function (request, reply) {
+  fastify.get('/:channelId/thread/:messageId', async function (request) {
     const { channelId, messageId } = request.params as { channelId: string, messageId: string };
     
     const replies = await fastify.db.message.findMany({
@@ -34,7 +34,7 @@ export default async function (fastify: FastifyInstance) {
     return { replies };
   });
 
-  fastify.post('/:channelId', async function (request, reply) {
+  fastify.post('/:channelId', async function (request) {
     const { channelId } = request.params as { channelId: string };
     const { content, parentId, fileUrl, fileType, fileName } = request.body as { content: string, parentId?: string, fileUrl?: string, fileType?: string, fileName?: string };
     const user = request.user as { id: string, name: string, email: string };
