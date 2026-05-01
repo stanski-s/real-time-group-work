@@ -7,6 +7,11 @@ import { useMutation } from '@tanstack/react-query';
 import api from '../../lib/axios';
 import { Message, Reaction } from '../../types';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 interface MessageItemProps {
   msg: Message;
   entityType: 'message' | 'directMessage';
@@ -36,7 +41,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
   return (
     <div className="flex items-start gap-4 hover:bg-gray-800/30 p-2 rounded-lg transition-colors group relative">
       {/* Actions (Hover) */}
-      <div className="absolute right-4 -top-3 hidden group-hover:flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg p-1 shadow-sm">
+      <div className="absolute right-4 -top-3 hidden group-hover:flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg p-1 shadow-sm z-10">
         <ReactionMenu onReact={(emoji) => toggleReaction.mutate(emoji)} />
         {onReply && (
           <button onClick={onReply} className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors" title="Odpowiedz w wątku">
@@ -59,7 +64,44 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-        <p className="text-gray-300 mt-1 break-words">{msg.content}</p>
+        
+        {/* Renderowanie treści w formacie Rich Text (Markdown) */}
+        <div className="mt-1 break-words text-gray-300 leading-relaxed text-[15px]">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ node, ...props }) => <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />,
+              p: ({ node, ...props }) => <p {...props} className="m-0 whitespace-pre-wrap" />,
+              strong: ({ node, ...props }) => <strong {...props} className="font-bold text-white" />,
+              em: ({ node, ...props }) => <em {...props} className="italic" />,
+              del: ({ node, ...props }) => <del {...props} className="line-through text-gray-500" />,
+              blockquote: ({ node, ...props }) => <blockquote {...props} className="border-l-4 border-gray-600 pl-3 py-0.5 my-1 text-gray-400 bg-gray-800/30 rounded-r" />,
+              ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-5 my-1" />,
+              ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-5 my-1" />,
+              code(props) {
+                const {children, className, node, ...rest} = props;
+                const match = /language-(\w+)/.exec(className || '');
+                return match ? (
+                  // @ts-expect-error: SyntaxHighlighter types can be mismatched with React 19
+                  <SyntaxHighlighter
+                    {...rest}
+                    PreTag="div"
+                    children={String(children).replace(/\n$/, '')}
+                    language={match[1]}
+                    style={vscDarkPlus}
+                    className="rounded-md border border-gray-700 !bg-[#1e1e1e] !my-2 text-sm scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+                  />
+                ) : (
+                  <code {...rest} className="bg-gray-800 text-[#ff8787] px-1.5 py-0.5 rounded text-[13px] font-mono border border-gray-700">
+                    {children}
+                  </code>
+                )
+              }
+            }}
+          >
+            {msg.content}
+          </ReactMarkdown>
+        </div>
         
         {/* Renderowanie załącznika */}
         {msg.fileUrl && (
