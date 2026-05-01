@@ -143,7 +143,7 @@ export default async function (fastify: FastifyInstance) {
         }
       }
     }
-  }, async function (request, reply) {
+  }, async function (request) {
     const user = await fastify.db.user.findUnique({
       where: { id: request.user.id },
       select: { id: true, email: true, name: true, image: true }

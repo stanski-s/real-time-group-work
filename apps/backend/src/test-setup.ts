@@ -4,6 +4,8 @@ import authPlugin from './app/plugins/auth';
 import swaggerPlugin from './app/plugins/swagger';
 import multipartPlugin from './app/plugins/multipart';
 import './app/plugins/prisma';
+import './app/plugins/socket';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const jest: any;
 
