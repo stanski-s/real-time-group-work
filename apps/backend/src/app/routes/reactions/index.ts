@@ -6,10 +6,55 @@ interface ReactionPayload {
   entityType: 'message' | 'directMessage';
 }
 
+const reactionSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    emoji: { type: 'string' },
+    userId: { type: 'string' },
+    messageId: { type: 'string', nullable: true },
+    directMessageId: { type: 'string', nullable: true }
+  }
+};
+
+const reactionBodySchema = {
+  type: 'object',
+  required: ['emoji', 'entityId', 'entityType'],
+  properties: {
+    emoji: { type: 'string' },
+    entityId: { type: 'string' },
+    entityType: { type: 'string', enum: ['message', 'directMessage'] }
+  }
+};
+
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.post('/', async function (request, reply) {
+  fastify.post('/', {
+    schema: {
+      tags: ['Reactions'],
+      summary: 'Add a reaction',
+      security: [{ cookieAuth: [] }],
+      body: reactionBodySchema,
+      response: {
+        201: {
+          type: 'object',
+          properties: { reaction: reactionSchema }
+        },
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            reaction: reactionSchema
+          }
+        },
+        400: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { emoji, entityId, entityType } = request.body as ReactionPayload;
     const userId = request.user.id;
 
@@ -53,7 +98,24 @@ export default async function (fastify: FastifyInstance) {
     return reply.code(201).send({ reaction });
   });
 
-  fastify.delete('/', async function (request, reply) {
+  fastify.delete('/', {
+    schema: {
+      tags: ['Reactions'],
+      summary: 'Remove a reaction',
+      security: [{ cookieAuth: [] }],
+      body: reactionBodySchema,
+      response: {
+        200: {
+          type: 'object',
+          properties: { success: { type: 'boolean' } }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { emoji, entityId, entityType } = request.body as ReactionPayload;
     const userId = request.user.id;
 

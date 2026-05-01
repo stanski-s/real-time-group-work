@@ -22,6 +22,7 @@ import prismaPlugin from './app/plugins/prisma';
 import socketPlugin from './app/plugins/socket';
 import multipartPlugin from './app/plugins/multipart';
 import staticPlugin from './app/plugins/static';
+import swaggerPlugin from './app/plugins/swagger';
 import authRoutes from './app/routes/auth';
 import workspacesRoutes from './app/routes/workspaces';
 import channelsRoutes from './app/routes/channels';
@@ -36,6 +37,7 @@ async function bootstrap() {
   await server.register(socketPlugin);
   await server.register(multipartPlugin);
   await server.register(staticPlugin);
+  await server.register(swaggerPlugin);
 
   await server.register(authRoutes, { prefix: '/api/auth' });
   await server.register(workspacesRoutes, { prefix: '/api/workspaces' });

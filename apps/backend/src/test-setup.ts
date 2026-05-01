@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import authPlugin from './app/plugins/auth';
+import swaggerPlugin from './app/plugins/swagger';
 import multipartPlugin from './app/plugins/multipart';
 import './app/plugins/prisma';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +74,7 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
 
   await app.register(authPlugin);
   await app.register(multipartPlugin);
+  await app.register(swaggerPlugin);
 
   return app as unknown as FastifyWithMockDB;
 }

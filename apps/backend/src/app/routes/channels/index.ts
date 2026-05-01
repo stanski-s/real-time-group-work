@@ -1,10 +1,43 @@
 import { FastifyInstance } from 'fastify';
 import { CreateChannelDto } from '@slack-clone/shared-types';
 
+const channelSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    workspaceId: { type: 'string' }
+  }
+};
+
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.post('/', async function (request, reply) {
+  fastify.post('/', {
+    schema: {
+      tags: ['Channels'],
+      summary: 'Create a new channel',
+      security: [{ cookieAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['name', 'workspaceId'],
+        properties: {
+          name: { type: 'string' },
+          workspaceId: { type: 'string' }
+        }
+      },
+      response: {
+        201: {
+          type: 'object',
+          properties: { channel: channelSchema }
+        },
+        403: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { name, workspaceId } = request.body as CreateChannelDto;
     const userId = request.user.id;
 
@@ -29,7 +62,27 @@ export default async function (fastify: FastifyInstance) {
     return reply.code(201).send({ channel });
   });
 
-  fastify.get('/:id', async function (request, reply) {
+  fastify.get('/:id', {
+    schema: {
+      tags: ['Channels'],
+      summary: 'Get channel details',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: { channel: channelSchema }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { id } = request.params as { id: string };
     const userId = request.user.id;
 

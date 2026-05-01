@@ -9,7 +9,28 @@ const pump = util.promisify(pipeline);
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.post('/', async function (request, reply) {
+  fastify.post('/', {
+    schema: {
+      tags: ['Uploads'],
+      summary: 'Upload a file',
+      security: [{ cookieAuth: [] }],
+      consumes: ['multipart/form-data'],
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            fileUrl: { type: 'string' },
+            fileType: { type: 'string' },
+            fileName: { type: 'string' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const data = await request.file();
     if (!data) {
       return reply.code(400).send({ error: 'Brak pliku' });

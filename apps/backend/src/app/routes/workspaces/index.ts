@@ -1,10 +1,66 @@
 import { FastifyInstance } from 'fastify';
 import { CreateWorkspaceDto } from '@slack-clone/shared-types';
 
+const userSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    email: { type: 'string' },
+    image: { type: 'string', nullable: true }
+  }
+};
+
+const channelSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    workspaceId: { type: 'string' },
+    createdAt: { type: 'string', format: 'date-time' }
+  }
+};
+
+const memberSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    userId: { type: 'string' },
+    workspaceId: { type: 'string' },
+    role: { type: 'string' },
+    user: userSchema
+  }
+};
+
+const workspaceSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    slug: { type: 'string' },
+    channels: { type: 'array', items: channelSchema },
+    members: { type: 'array', items: memberSchema }
+  }
+};
+
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.get('/', async function (request, reply) {
+  fastify.get('/', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Get all workspaces for current user',
+      security: [{ cookieAuth: [] }],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            workspaces: { type: 'array', items: workspaceSchema }
+          }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const userId = request.user.id;
 
     const workspaces = await fastify.db.workspace.findMany({
@@ -26,7 +82,26 @@ export default async function (fastify: FastifyInstance) {
     return { workspaces };
   });
 
-  fastify.post('/', async function (request, reply) {
+  fastify.post('/', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Create a new workspace',
+      security: [{ cookieAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string' }
+        }
+      },
+      response: {
+        201: {
+          type: 'object',
+          properties: { workspace: workspaceSchema }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { name } = request.body as CreateWorkspaceDto;
     const userId = request.user.id;
 
@@ -56,7 +131,27 @@ export default async function (fastify: FastifyInstance) {
     return reply.code(201).send({ workspace });
   });
 
-  fastify.get('/:id', async function (request, reply) {
+  fastify.get('/:id', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Get workspace details',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: { workspace: workspaceSchema }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { id } = request.params as { id: string };
     const userId = request.user.id;
 
@@ -84,7 +179,32 @@ export default async function (fastify: FastifyInstance) {
     return { workspace };
   });
 
-  fastify.get('/:id/preview', async function (request, reply) {
+  fastify.get('/:id/preview', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Get basic workspace preview info',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            workspace: {
+              type: 'object',
+              properties: { id: { type: 'string' }, name: { type: 'string' } }
+            }
+          }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { id } = request.params as { id: string };
     const workspace = await fastify.db.workspace.findUnique({
       where: { id },
@@ -97,7 +217,23 @@ export default async function (fastify: FastifyInstance) {
     return { workspace };
   });
 
-  fastify.post('/:id/join', async function (request, reply) {
+  fastify.post('/:id/join', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Join a workspace',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: { success: { type: 'boolean' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { id } = request.params as { id: string };
     const userId = request.user.id;
 

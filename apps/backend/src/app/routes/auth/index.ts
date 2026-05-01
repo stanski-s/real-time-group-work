@@ -1,8 +1,42 @@
 import { FastifyInstance } from 'fastify';
 import * as argon2 from 'argon2';
 
+const userSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    email: { type: 'string' },
+    name: { type: 'string' },
+    image: { type: 'string', nullable: true }
+  }
+};
+
 export default async function (fastify: FastifyInstance) {
-  fastify.post('/register', async function (request, reply) {
+  fastify.post('/register', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Register a new user',
+      body: {
+        type: 'object',
+        required: ['email', 'password', 'name'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 6 },
+          name: { type: 'string' }
+        }
+      },
+      response: {
+        201: {
+          type: 'object',
+          properties: { user: userSchema }
+        },
+        400: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { email, password, name } = request.body as any;
 
     const existingUser = await fastify.db.user.findUnique({ where: { email } });
@@ -29,7 +63,30 @@ export default async function (fastify: FastifyInstance) {
       .send({ user: { id: user.id, email: user.email, name: user.name } });
   });
 
-  fastify.post('/login', async function (request, reply) {
+  fastify.post('/login', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Log in user',
+      body: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: { user: userSchema }
+        },
+        401: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const { email, password } = request.body as any;
 
     const user = await fastify.db.user.findUnique({ where: { email } });
@@ -54,11 +111,39 @@ export default async function (fastify: FastifyInstance) {
       .send({ user: { id: user.id, email: user.email, name: user.name } });
   });
 
-  fastify.post('/logout', async function (request, reply) {
+  fastify.post('/logout', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Log out user',
+      response: {
+        200: {
+          type: 'object',
+          properties: { success: { type: 'boolean' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     reply.clearCookie('token', { path: '/' }).send({ success: true });
   });
 
-  fastify.get('/me', { preValidation: [fastify.authenticate] }, async function (request, reply) {
+  fastify.get('/me', {
+    preValidation: [fastify.authenticate],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Get current user',
+      security: [{ cookieAuth: [] }],
+      response: {
+        200: {
+          type: 'object',
+          properties: { user: userSchema }
+        },
+        401: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
     const user = await fastify.db.user.findUnique({
       where: { id: request.user.id },
       select: { id: true, email: true, name: true, image: true }
