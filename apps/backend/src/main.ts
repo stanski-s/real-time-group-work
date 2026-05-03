@@ -23,6 +23,7 @@ import socketPlugin from './app/plugins/socket';
 import multipartPlugin from './app/plugins/multipart';
 import staticPlugin from './app/plugins/static';
 import swaggerPlugin from './app/plugins/swagger';
+import rateLimitPlugin from './app/plugins/rate-limit';
 import authRoutes from './app/routes/auth';
 import workspacesRoutes from './app/routes/workspaces';
 import channelsRoutes from './app/routes/channels';
@@ -34,6 +35,7 @@ import uploadRoutes from './app/routes/upload';
 async function bootstrap() {
   await server.register(prismaPlugin);
   await server.register(authPlugin);
+  await server.register(rateLimitPlugin);
   await server.register(socketPlugin);
   await server.register(multipartPlugin);
   await server.register(staticPlugin);

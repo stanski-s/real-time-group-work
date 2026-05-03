@@ -143,6 +143,12 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.post('/:workspaceId/:userId', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute',
+      }
+    },
     schema: {
       tags: ['DMs'],
       summary: 'Send a direct message',

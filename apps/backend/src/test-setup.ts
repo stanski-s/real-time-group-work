@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import authPlugin from './app/plugins/auth';
 import swaggerPlugin from './app/plugins/swagger';
 import multipartPlugin from './app/plugins/multipart';
+import rateLimitPlugin from './app/plugins/rate-limit';
 import './app/plugins/prisma';
 import './app/plugins/socket';
 
@@ -75,6 +76,7 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
   );
 
   await app.register(authPlugin);
+  await app.register(rateLimitPlugin);
   await app.register(multipartPlugin);
   await app.register(swaggerPlugin);
 

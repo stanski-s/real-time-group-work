@@ -13,6 +13,13 @@ const userSchema = {
 
 export default async function (fastify: FastifyInstance) {
   fastify.post('/register', {
+    config: {
+      rateLimit: {
+        max: 3,
+        timeWindow: '1 hour',
+        keyGenerator: (request) => request.ip, // rejestracja zawsze po IP
+      }
+    },
     schema: {
       tags: ['Auth'],
       summary: 'Register a new user',
@@ -64,6 +71,13 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.post('/login', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '15 minutes',
+        keyGenerator: (request) => request.ip, // login zawsze po IP (user nie jest jeszcze znany)
+      }
+    },
     schema: {
       tags: ['Auth'],
       summary: 'Log in user',

@@ -31,6 +31,12 @@ export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
   fastify.post('/', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute',
+      }
+    },
     schema: {
       tags: ['Reactions'],
       summary: 'Add a reaction',

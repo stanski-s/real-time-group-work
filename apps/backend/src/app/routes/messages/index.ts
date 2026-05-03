@@ -116,6 +116,12 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.post('/:channelId', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '1 minute',
+      }
+    },
     schema: {
       tags: ['Messages'],
       summary: 'Send a message to a channel',

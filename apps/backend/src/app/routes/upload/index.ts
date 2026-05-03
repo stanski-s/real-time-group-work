@@ -22,6 +22,12 @@ export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
   fastify.post('/', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      }
+    },
     schema: {
       tags: ['Uploads'],
       summary: 'Upload a file',
