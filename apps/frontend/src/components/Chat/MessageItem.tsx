@@ -9,8 +9,18 @@ import { Message, Reaction } from '../../types';
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    code: [['className', /^language-/]],
+    span: [['style']],
+  },
+};
 
 interface MessageItemProps {
   msg: Message;
@@ -69,6 +79,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
         <div className="mt-1 break-words text-gray-300 leading-relaxed text-[15px]">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}  // Punkt 4: Ochrona przed XSS
             components={{
               a: ({ node, ...props }) => <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />,
               p: ({ node, ...props }) => <p {...props} className="m-0 whitespace-pre-wrap" />,

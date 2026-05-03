@@ -22,8 +22,8 @@ export default async function (fastify: FastifyInstance) {
         type: 'object',
         required: ['name', 'workspaceId'],
         properties: {
-          name: { type: 'string' },
-          workspaceId: { type: 'string' }
+          name: { type: 'string', minLength: 1, maxLength: 80 },
+          workspaceId: { type: 'string', maxLength: 36 }
         }
       },
       response: {

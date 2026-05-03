@@ -60,7 +60,7 @@ export default async function (fastify: FastifyInstance) {
         }
       }
     }
-  }, async function (request, reply) {
+  }, async function (request) {
     const userId = request.user.id;
 
     const workspaces = await fastify.db.workspace.findMany({
@@ -91,7 +91,7 @@ export default async function (fastify: FastifyInstance) {
         type: 'object',
         required: ['name'],
         properties: {
-          name: { type: 'string' }
+          name: { type: 'string', minLength: 2, maxLength: 80 }
         }
       },
       response: {
@@ -233,7 +233,7 @@ export default async function (fastify: FastifyInstance) {
         }
       }
     }
-  }, async function (request, reply) {
+  }, async function (request) {
     const { id } = request.params as { id: string };
     const userId = request.user.id;
 

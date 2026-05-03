@@ -20,9 +20,9 @@ export default async function (fastify: FastifyInstance) {
         type: 'object',
         required: ['email', 'password', 'name'],
         properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string', minLength: 6 },
-          name: { type: 'string' }
+          email: { type: 'string', format: 'email', maxLength: 255 },
+          password: { type: 'string', minLength: 6, maxLength: 128 },
+          name: { type: 'string', minLength: 1, maxLength: 64 }
         }
       },
       response: {
@@ -37,7 +37,7 @@ export default async function (fastify: FastifyInstance) {
       }
     }
   }, async function (request, reply) {
-    const { email, password, name } = request.body as any;
+    const { email, password, name } = request.body as { email: string; password: string; name: string };
 
     const existingUser = await fastify.db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -71,8 +71,8 @@ export default async function (fastify: FastifyInstance) {
         type: 'object',
         required: ['email', 'password'],
         properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string' }
+          email: { type: 'string', format: 'email', maxLength: 255 },
+          password: { type: 'string', minLength: 1, maxLength: 128 }
         }
       },
       response: {
@@ -87,7 +87,7 @@ export default async function (fastify: FastifyInstance) {
       }
     }
   }, async function (request, reply) {
-    const { email, password } = request.body as any;
+    const { email, password } = request.body as { email: string; password: string };
 
     const user = await fastify.db.user.findUnique({ where: { email } });
     if (!user) {

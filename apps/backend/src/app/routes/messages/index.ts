@@ -128,11 +128,11 @@ export default async function (fastify: FastifyInstance) {
         type: 'object',
         required: ['content'],
         properties: {
-          content: { type: 'string' },
-          parentId: { type: 'string' },
-          fileUrl: { type: 'string' },
-          fileType: { type: 'string' },
-          fileName: { type: 'string' }
+          content: { type: 'string', minLength: 1, maxLength: 4000 },
+          parentId: { type: 'string', maxLength: 36 },
+          fileUrl: { type: 'string', maxLength: 512 },
+          fileType: { type: 'string', maxLength: 128 },
+          fileName: { type: 'string', maxLength: 256 }
         }
       },
       response: {
