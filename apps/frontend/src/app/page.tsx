@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/auth';
 import { useSocketStore } from '../store/socket';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../lib/axios';
-import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus, Trash2, Shield } from 'lucide-react';
+import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus, Trash2, Shield, Check } from 'lucide-react';
 import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
 import DirectMessageList from '../components/Chat/DirectMessageList';
@@ -26,6 +26,7 @@ export default function Index() {
   const [activeThreadType, setActiveThreadType] = useState<'message' | 'directMessage' | null>(null);
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
+  const [copiedInvite, setCopiedInvite] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -202,14 +203,25 @@ export default function Index() {
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(`http://localhost:3001/join/${activeWorkspace?.id}`);
-                alert('Skopiowano link z zaproszeniem do schowka!');
+                setCopiedInvite(true);
+                setTimeout(() => setCopiedInvite(false), 2000);
               }}
-              title="Zaproś znajomych" 
-              className="text-gray-400 hover:text-white transition-colors"
+              title={copiedInvite ? undefined : "Zaproś znajomych"} 
+              className="relative text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-850"
             >
-              <UserPlus className="h-4 w-4" />
+              {copiedInvite && (
+                <div className="absolute top-full left-1/2 mt-2 px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 rounded-md shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
+                  Skopiowano!
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-4 border-transparent border-b-indigo-600"></div>
+                </div>
+              )}
+              {copiedInvite ? (
+                <Check className="h-4 w-4 text-green-400 transition-all duration-200 scale-110" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
             </button>
-            <button className="text-gray-400 hover:text-white transition-colors">
+            <button className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-850">
               <Settings className="h-4 w-4" />
             </button>
           </div>
@@ -221,7 +233,8 @@ export default function Index() {
             {isCurrentUserAdmin && (
               <button 
                 onClick={() => setIsCreatingChannel(true)}
-                className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+                className="text-gray-400 hover:text-white transition-colors p-0.5 rounded hover:bg-gray-800"
+                title="Dodaj kanał"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -249,7 +262,7 @@ export default function Index() {
               </button>
             ))}
             {isCreatingChannel && (
-              <div className="px-2 mt-2">
+              <div className="px-2 mt-4">
                 <input 
                   autoFocus
                   type="text" 
@@ -266,7 +279,7 @@ export default function Index() {
                       setIsCreatingChannel(false);
                     }
                   }}
-                  placeholder="nowy-kanal"
+                  placeholder="nowy-kanał"
                   disabled={createChannel.isPending}
                   className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:border-indigo-500 shadow-inner"
                 />
