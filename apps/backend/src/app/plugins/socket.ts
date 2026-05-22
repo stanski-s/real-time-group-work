@@ -47,6 +47,7 @@ export default fp(async (fastify) => {
     fastify.log.info(`Socket connected: ${socket.id}`);
     
     const userId = (socket as AuthenticatedSocket).user.id;
+    socket.join(`user_${userId}`);
 
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());

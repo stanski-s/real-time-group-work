@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/auth';
 import { useSocketStore } from '../store/socket';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../lib/axios';
-import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus, Trash2, Shield, Check } from 'lucide-react';
+import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus, Trash2, Shield, Check, Users, UserX, Send, Clock } from 'lucide-react';
 import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
 import DirectMessageList from '../components/Chat/DirectMessageList';
@@ -17,7 +17,7 @@ import { Workspace, Channel, Message, WorkspaceMember } from '../types';
 export default function Index() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const { connect, disconnect, onlineUsers } = useSocketStore();
+  const { connect, disconnect, onlineUsers, socket } = useSocketStore();
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
@@ -29,6 +29,10 @@ export default function Index() {
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [workspaceViews, setWorkspaceViews] = useState<Record<string, { channelId: string | null; dmUserId: string | null }>>({});
+  const [activeView, setActiveView] = useState<'workspace' | 'friends'>('workspace');
+  const [friendsTab, setFriendsTab] = useState<'online' | 'all' | 'pending' | 'add'>('online');
+  const [friendEmail, setFriendEmail] = useState('');
+  const [addFriendStatus, setAddFriendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +54,53 @@ export default function Index() {
     enabled: !!user,
   });
 
+  const { data: friendsData = { friends: [] }, refetch: refetchFriends } = useQuery({
+    queryKey: ['friends'],
+    queryFn: async () => {
+      const res = await api.get('/friends');
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: requestsData = { requests: [] }, refetch: refetchRequests } = useQuery({
+    queryKey: ['friends', 'requests'],
+    queryFn: async () => {
+      const res = await api.get('/friends/requests');
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleFriendRequest = () => {
+      refetchRequests();
+    };
+
+    const handleFriendRequestAccepted = () => {
+      refetchFriends();
+      refetchRequests();
+    };
+
+    const handleFriendshipRemoved = () => {
+      refetchFriends();
+    };
+
+    socket.on('friend_request_received', handleFriendRequest);
+    socket.on('friend_request_accepted', handleFriendRequestAccepted);
+    socket.on('friend_request_declined', handleFriendRequest);
+    socket.on('friendship_removed', handleFriendshipRemoved);
+
+    return () => {
+      socket.off('friend_request_received', handleFriendRequest);
+      socket.off('friend_request_accepted', handleFriendRequestAccepted);
+      socket.off('friend_request_declined', handleFriendRequest);
+      socket.off('friendship_removed', handleFriendshipRemoved);
+    };
+  }, [socket, refetchFriends, refetchRequests]);
+
   const createWorkspace = useMutation({
     mutationFn: async (name: string) => {
       const res = await api.post('/workspaces', { name });
@@ -60,6 +111,7 @@ export default function Index() {
       setIsCreatingWorkspace(false);
       if (data?.workspace?.id) {
         setActiveWorkspaceId(data.workspace.id);
+        setActiveView('workspace');
       }
       refetch();
     },
@@ -119,6 +171,49 @@ export default function Index() {
     onError: (err: unknown) => {
       console.error(err);
       alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy zmianie roli');
+    }
+  });
+
+  const sendFriendRequest = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await api.post('/friends/request', { email });
+      return res.data;
+    },
+    onSuccess: () => {
+      setAddFriendStatus({ type: 'success', message: 'Pomyślnie wysłano zaproszenie do znajomych!' });
+      setFriendEmail('');
+      refetchRequests();
+    },
+    onError: (err: any) => {
+      const errorMsg = err.response?.data?.error || 'Wystąpił błąd podczas wysyłania zaproszenia';
+      setAddFriendStatus({ type: 'error', message: errorMsg });
+    }
+  });
+
+  const respondToFriendRequest = useMutation({
+    mutationFn: async ({ requestId, action }: { requestId: string; action: 'ACCEPT' | 'DECLINE' }) => {
+      const res = await api.post(`/friends/request/${requestId}/respond`, { action });
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchRequests();
+      refetchFriends();
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.error || 'Wystąpił błąd przy rozpatrywaniu zaproszenia');
+    }
+  });
+
+  const removeFriend = useMutation({
+    mutationFn: async (friendId: string) => {
+      const res = await api.delete(`/friends/${friendId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchFriends();
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.error || 'Wystąpił błąd przy usuwaniu znajomego');
     }
   });
 
@@ -193,6 +288,38 @@ export default function Index() {
   const currentUserMember = activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === user?.id);
   const isCurrentUserAdmin = currentUserMember?.role === 'admin';
 
+  const friends = friendsData?.friends || [];
+  const requests = requestsData?.requests || [];
+  const pendingReceivedCount = requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').length;
+
+  const handleStartChat = (friendId: string) => {
+    const inCurrentWorkspace = activeWorkspace?.members?.some((m: any) => m.userId === friendId);
+    
+    if (inCurrentWorkspace) {
+      setActiveDmUserId(friendId);
+      setActiveChannelId(null);
+      setActiveThreadMessage(null);
+      setActiveThreadType(null);
+      setActiveView('workspace');
+      return;
+    }
+    
+    const commonWorkspace = workspaces.find((w: any) => 
+      w.members?.some((m: any) => m.userId === friendId)
+    );
+    
+    if (commonWorkspace) {
+      setActiveWorkspaceId(commonWorkspace.id);
+      setActiveDmUserId(friendId);
+      setActiveChannelId(null);
+      setActiveThreadMessage(null);
+      setActiveThreadType(null);
+      setActiveView('workspace');
+    } else {
+      alert('Nie macie wspólnej przestrzeni roboczej z tym użytkownikiem. Udostępnij mu link zaproszenia do swojego workspace!');
+    }
+  };
+
   if (workspaces.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
@@ -233,12 +360,36 @@ export default function Index() {
       
       {/* Bardzo wąski pasek przełączania Workspaces */}
       <div className="w-16 flex-shrink-0 bg-gray-950 flex flex-col items-center py-4 gap-4 border-r border-gray-800/50 shadow-xl z-20">
+        {/* Globalny przycisk Znajomi */}
+        <button
+          onClick={() => setActiveView('friends')}
+          className={`relative flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200 ${
+            activeView === 'friends'
+              ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-950 scale-105'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white hover:scale-105'
+          }`}
+          title="Znajomi"
+        >
+          <Users className="h-5 w-5" />
+          {pendingReceivedCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-950 animate-pulse">
+              {pendingReceivedCount}
+            </span>
+          )}
+        </button>
+
+        {/* Separator */}
+        <div className="w-8 h-[2px] bg-gray-800 rounded my-1" />
+
         {workspaces.map((w: Workspace) => (
           <button
             key={w.id}
-            onClick={() => setActiveWorkspaceId(w.id)}
+            onClick={() => {
+              setActiveWorkspaceId(w.id);
+              setActiveView('workspace');
+            }}
             className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all duration-200 ${
-              activeWorkspace?.id === w.id 
+              activeView === 'workspace' && activeWorkspace?.id === w.id 
                 ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-950 scale-105' 
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white hover:scale-105'
             }`}
@@ -316,9 +467,10 @@ export default function Index() {
                   setActiveDmUserId(null);
                   setActiveThreadMessage(null);
                   setActiveThreadType(null);
+                  setActiveView('workspace');
                 }}
                 className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
-                  activeChannel?.id === channel.id
+                  activeView === 'workspace' && activeChannel?.id === channel.id
                     ? 'bg-indigo-500/10 text-indigo-300'
                     : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
                 }`}
@@ -355,124 +507,476 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Główne okno czatu */}
-      <div className="flex flex-1 flex-col bg-[#1a1d21]">
-        <div className="flex h-14 items-center border-b border-gray-800/50 px-6 shadow-sm">
-          {activeChannelId ? (
-            <>
-              <Hash className="h-5 w-5 text-gray-400 mr-2" />
-              <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
-            </>
-          ) : activeDmUserId ? (
-            <>
-              <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center mr-2">
-                <span className="text-indigo-400 font-bold text-xs">
-                  {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name.charAt(0).toUpperCase()}
-                </span>
+      {activeView === 'friends' ? (
+        <div className="flex flex-1 flex-col bg-[#1a1d21]">
+          {/* Header paska znajomych */}
+          <div className="flex h-14 items-center justify-between border-b border-gray-800/50 px-6 shadow-sm flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-gray-400" />
+              <h2 className="font-bold text-white text-base">Znajomi</h2>
+              <div className="h-4 w-[1px] bg-gray-800 mx-2" />
+              
+              {/* Zakładki */}
+              <div className="flex gap-1 text-sm font-medium">
+                <button
+                  onClick={() => setFriendsTab('online')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    friendsTab === 'online'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                  }`}
+                >
+                  Aktywni
+                </button>
+                <button
+                  onClick={() => setFriendsTab('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    friendsTab === 'all'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                  }`}
+                >
+                  Wszyscy
+                </button>
+                <button
+                  onClick={() => setFriendsTab('pending')}
+                  className={`relative px-3 py-1.5 rounded-lg transition-colors ${
+                    friendsTab === 'pending'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                  }`}
+                >
+                  Oczekujące
+                  {pendingReceivedCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-1 ring-gray-950">
+                      {pendingReceivedCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setFriendsTab('add')}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                    friendsTab === 'add'
+                      ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                      : 'text-green-500 hover:bg-green-600/10'
+                  }`}
+                >
+                  Dodaj znajomego
+                </button>
               </div>
-              <h2 className="font-bold text-white text-base">
-                {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name} {activeDmUserId === user?.id && '(Ty)'}
-              </h2>
-            </>
-          ) : null}
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse">
-          {activeChannelId && <MessageList channelId={activeChannelId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('message'); }} />}
-          {activeDmUserId && activeWorkspace?.id && <DirectMessageList workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('directMessage'); }} />}
-        </div>
-
-        {activeChannelId && <MessageInput channelId={activeChannelId} />}
-        {activeDmUserId && activeWorkspace?.id && <DirectMessageInput workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
-      </div>
-
-      {/* Prawy Sidebar dla Członków LUB Wątku */}
-      {activeThreadMessage && activeThreadType ? (
-        <ThreadSidebar
-          message={activeThreadMessage}
-          entityType={activeThreadType}
-          channelId={activeChannelId || undefined}
-          workspaceId={activeWorkspaceId || undefined}
-          otherUserId={activeDmUserId || undefined}
-          onClose={() => {
-            setActiveThreadMessage(null);
-            setActiveThreadType(null);
-          }}
-        />
-      ) : (
-        <div className="w-64 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
-          <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
-            <h2 className="font-bold text-white text-base">Członkowie zespołu</h2>
+            </div>
           </div>
-        
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
-          {activeWorkspace?.members?.map((m: WorkspaceMember) => (
-            <div 
-              key={m.id} 
-              onClick={() => {
-                setActiveChannelId(null);
-                setActiveDmUserId(m.userId);
+          
+          {/* Główna treść zakładki */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {friendsTab === 'online' && (
+              <div className="space-y-2 max-w-4xl">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                  Aktywni znajomi — {friends.filter((f: any) => onlineUsers.includes(f.id)).length}
+                </div>
+                {friends.filter((f: any) => onlineUsers.includes(f.id)).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-indigo-400/60" />
+                    </div>
+                    <p className="text-gray-400 text-sm font-sans">Nikt ze znajomych nie jest teraz aktywny.</p>
+                  </div>
+                ) : (
+                  friends.filter((f: any) => onlineUsers.includes(f.id)).map((friend: any) => (
+                    <div key={friend.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-850 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all duration-200 group">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                            {friend.image ? (
+                              <img src={friend.image} alt={friend.name} className="h-full w-full rounded-xl object-cover" />
+                            ) : (
+                              friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-[#1a1d21] bg-green-500"></div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-white text-sm flex items-center gap-2">
+                            {friend.name || 'Użytkownik bez nazwy'}
+                          </div>
+                          <div className="text-xs text-gray-455">{friend.email}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleStartChat(friend.id)}
+                          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-750 text-gray-300 hover:text-white transition-colors"
+                          title="Rozpocznij czat"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Czy na pewno chcesz usunąć użytkownika ${friend.name} ze znajomych?`)) {
+                              removeFriend.mutate(friend.id);
+                            }
+                          }}
+                          className="p-2 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Usuń znajomego"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            
+            {friendsTab === 'all' && (
+              <div className="space-y-2 max-w-4xl">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                  Wszyscy znajomi — {friends.length}
+                </div>
+                {friends.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-indigo-400/60" />
+                    </div>
+                    <p className="text-gray-400 text-sm font-sans">Nie masz jeszcze żadnych znajomych.</p>
+                    <button
+                      onClick={() => setFriendsTab('add')}
+                      className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors font-sans"
+                    >
+                      Dodaj pierwszego znajomego
+                    </button>
+                  </div>
+                ) : (
+                  friends.map((friend: any) => {
+                    const isOnline = onlineUsers.includes(friend.id);
+                    return (
+                      <div key={friend.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-850 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all duration-200 group">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                              {friend.image ? (
+                                <img src={friend.image} alt={friend.name} className="h-full w-full rounded-xl object-cover" />
+                              ) : (
+                                friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-[#1a1d21] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white text-sm flex items-center gap-2">
+                              {friend.name || 'Użytkownik bez nazwy'}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isOnline ? 'bg-green-500/10 text-green-400' : 'bg-gray-850 text-gray-400'}`}>
+                                {isOnline ? 'aktywny' : 'nieaktywny'}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-455">{friend.email}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleStartChat(friend.id)}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-750 text-gray-300 hover:text-white transition-colors"
+                            title="Rozpocznij czat"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Czy na pewno chcesz usunąć użytkownika ${friend.name} ze znajomych?`)) {
+                                removeFriend.mutate(friend.id);
+                              }
+                            }}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Usuń znajomego"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+            
+            {friendsTab === 'pending' && (
+              <div className="space-y-6 max-w-4xl">
+                {requests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+                      <Clock className="h-8 w-8 text-indigo-400/60" />
+                    </div>
+                    <p className="text-gray-400 text-sm font-sans">Brak oczekujących zaproszeń.</p>
+                  </div>
+                ) : (
+                  <>
+                    {requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').length > 0 && (
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                          Otrzymane zaproszenia — {requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').length}
+                        </div>
+                        <div className="space-y-2">
+                          {requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').map((req: any) => (
+                            <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-855 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all group">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                                  {req.sender.image ? (
+                                    <img src={req.sender.image} alt={req.sender.name} className="h-full w-full rounded-xl object-cover" />
+                                  ) : (
+                                    req.sender.name ? req.sender.name.charAt(0).toUpperCase() : req.sender.email.charAt(0).toUpperCase()
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-white text-sm">{req.sender.name || 'Użytkownik bez nazwy'}</div>
+                                  <div className="text-xs text-gray-455">{req.sender.email}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => respondToFriendRequest.mutate({ requestId: req.id, action: 'ACCEPT' })}
+                                  disabled={respondToFriendRequest.isPending}
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-600/20 hover:bg-green-600 text-green-400 hover:text-white transition-colors"
+                                  title="Akceptuj"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => respondToFriendRequest.mutate({ requestId: req.id, action: 'DECLINE' })}
+                                  disabled={respondToFriendRequest.isPending}
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white transition-colors"
+                                  title="Odrzuć"
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {requests.filter((r: any) => r.senderId === user?.id && r.status === 'PENDING').length > 0 && (
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                          Wysłane zaproszenia — {requests.filter((r: any) => r.senderId === user?.id && r.status === 'PENDING').length}
+                        </div>
+                        <div className="space-y-2">
+                          {requests.filter((r: any) => r.senderId === user?.id && r.status === 'PENDING').map((req: any) => (
+                            <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/10 border border-gray-855 hover:bg-gray-800/20 hover:border-gray-700/50 transition-all">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-gray-850 flex items-center justify-center font-bold text-gray-400 text-sm">
+                                  {req.receiver.image ? (
+                                    <img src={req.receiver.image} alt={req.receiver.name} className="h-full w-full rounded-xl object-cover" />
+                                  ) : (
+                                    req.receiver.name ? req.receiver.name.charAt(0).toUpperCase() : req.receiver.email.charAt(0).toUpperCase()
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-gray-300 text-sm">{req.receiver.name || 'Użytkownik bez nazwy'}</div>
+                                  <div className="text-xs text-gray-500">{req.receiver.email}</div>
+                                </div>
+                              </div>
+                              <div>
+                                <button
+                                  onClick={() => respondToFriendRequest.mutate({ requestId: req.id, action: 'DECLINE' })}
+                                  disabled={respondToFriendRequest.isPending}
+                                  className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-medium transition-colors"
+                                  title="Anuluj zaproszenie"
+                                >
+                                  Anuluj
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+            
+            {friendsTab === 'add' && (
+              <div className="max-w-md font-sans">
+                <h3 className="text-base font-bold text-white mb-1">DODAJ ZNAJOMEGO</h3>
+                <p className="text-xs text-gray-400 mb-6">
+                  Możesz dodać znajomego przy użyciu jego adresu e-mail. Pamiętaj o wielkości liter!
+                </p>
+                
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (friendEmail.trim() && !sendFriendRequest.isPending) {
+                      sendFriendRequest.mutate(friendEmail.trim());
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="relative flex items-center">
+                    <input
+                      type="email"
+                      placeholder="Wpisz adres e-mail znajomego..."
+                      value={friendEmail}
+                      onChange={(e) => {
+                        setFriendEmail(e.target.value);
+                        if (addFriendStatus) setAddFriendStatus(null);
+                      }}
+                      className="w-full bg-gray-900 border border-gray-700 focus:border-indigo-500 text-gray-200 text-sm rounded-xl px-4 py-3.5 outline-none shadow-inner transition-all duration-200 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] placeholder-gray-500"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={!friendEmail.trim() || sendFriendRequest.isPending}
+                      className="absolute right-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {sendFriendRequest.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Send className="h-3 w-3" />
+                      )}
+                      Wyślij
+                    </button>
+                  </div>
+                  
+                  {addFriendStatus && (
+                    <div
+                      className={`p-3 rounded-lg text-xs font-medium ${
+                        addFriendStatus.type === 'success'
+                          ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                          : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      } animate-fade-in`}
+                    >
+                      {addFriendStatus.message}
+                    </div>
+                  )}
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Główne okno czatu */}
+          <div className="flex flex-1 flex-col bg-[#1a1d21]">
+            <div className="flex h-14 items-center border-b border-gray-800/50 px-6 shadow-sm">
+              {activeChannelId ? (
+                <>
+                  <Hash className="h-5 w-5 text-gray-400 mr-2" />
+                  <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
+                </>
+              ) : activeDmUserId ? (
+                <>
+                  <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center mr-2">
+                    <span className="text-indigo-400 font-bold text-xs">
+                      {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <h2 className="font-bold text-white text-base">
+                    {activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === activeDmUserId)?.user.name} {activeDmUserId === user?.id && '(Ty)'}
+                  </h2>
+                </>
+              ) : null}
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse">
+              {activeChannelId && <MessageList channelId={activeChannelId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('message'); }} />}
+              {activeDmUserId && activeWorkspace?.id && <DirectMessageList workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} onReply={(msg) => { setActiveThreadMessage(msg); setActiveThreadType('directMessage'); }} />}
+            </div>
+
+            {activeChannelId && <MessageInput channelId={activeChannelId} />}
+            {activeDmUserId && activeWorkspace?.id && <DirectMessageInput workspaceId={activeWorkspace.id} otherUserId={activeDmUserId} />}
+          </div>
+
+          {/* Prawy Sidebar dla Członków LUB Wątku */}
+          {activeThreadMessage && activeThreadType ? (
+            <ThreadSidebar
+              message={activeThreadMessage}
+              entityType={activeThreadType}
+              channelId={activeChannelId || undefined}
+              workspaceId={activeWorkspaceId || undefined}
+              otherUserId={activeDmUserId || undefined}
+              onClose={() => {
                 setActiveThreadMessage(null);
                 setActiveThreadType(null);
               }}
-              className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
-            >
-              <div className="relative flex-shrink-0">
-                <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                  {m.user.image ? (
-                    <img src={m.user.image} alt={m.user.name} className="h-full w-full rounded-lg object-cover" />
-                  ) : (
-                    <span className="text-indigo-400 font-bold text-sm">{m.user.name.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-                {/* Kropka statusu Online/Offline */}
-                <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#1a1d21] transition-colors ${onlineUsers.includes(m.userId) ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+            />
+          ) : (
+            <div className="w-64 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
+              <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
+                <h2 className="font-bold text-white text-base">Członkowie zespołu</h2>
               </div>
-              <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors truncate">{m.user.name} {m.userId === user?.id && '(Ty)'}</span>
-                
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {isCurrentUserAdmin && m.userId !== user?.id ? (
-                    <select
-                      value={m.role}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        changeRole.mutate({ memberId: m.id, role: e.target.value as 'admin' | 'member' });
-                      }}
-                      disabled={changeRole.isPending}
-                      className="text-[11px] bg-gray-800 text-gray-300 border border-gray-700 rounded px-1 py-0.5 font-medium outline-none focus:border-indigo-500 transition-colors"
-                    >
-                      <option value="member">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  ) : (
-                    m.role === 'admin' && (
-                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Admin</span>
-                    )
-                  )}
+            
+              <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
+                {activeWorkspace?.members?.map((m: WorkspaceMember) => (
+                  <div 
+                    key={m.id} 
+                    onClick={() => {
+                      setActiveChannelId(null);
+                      setActiveDmUserId(m.userId);
+                      setActiveThreadMessage(null);
+                      setActiveThreadType(null);
+                      setActiveView('workspace');
+                    }}
+                    className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                        {m.user.image ? (
+                          <img src={m.user.image} alt={m.user.name} className="h-full w-full rounded-lg object-cover" />
+                        ) : (
+                          <span className="text-indigo-400 font-bold text-sm">{m.user.name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      {/* Kropka statusu Online/Offline */}
+                      <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#1a1d21] transition-colors ${onlineUsers.includes(m.userId) ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                      <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors truncate">{m.user.name} {m.userId === user?.id && '(Ty)'}</span>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isCurrentUserAdmin && m.userId !== user?.id ? (
+                          <select
+                            value={m.role}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              changeRole.mutate({ memberId: m.id, role: e.target.value as 'admin' | 'member' });
+                            }}
+                            disabled={changeRole.isPending}
+                            className="text-[11px] bg-gray-800 text-gray-300 border border-gray-700 rounded px-1 py-0.5 font-medium outline-none focus:border-indigo-500 transition-colors"
+                          >
+                            <option value="member">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          m.role === 'admin' && (
+                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Admin</span>
+                          )
+                        )}
 
-                  {isCurrentUserAdmin && m.userId !== user?.id && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Czy na pewno chcesz usunąć użytkownika ${m.user.name} z tego workspace?`)) {
-                          removeMember.mutate(m.id);
-                        }
-                      }}
-                      disabled={removeMember.isPending}
-                      className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
-                      title="Usuń użytkownika z workspace"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
+                        {isCurrentUserAdmin && m.userId !== user?.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Czy na pewno chcesz usunąć użytkownika ${m.user.name} z tego workspace?`)) {
+                                removeMember.mutate(m.id);
+                              }
+                            }}
+                            disabled={removeMember.isPending}
+                            className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                            title="Usuń użytkownika z workspace"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+        </>
       )}
 
       {/* Modal tworzenia nowego Workspace */}

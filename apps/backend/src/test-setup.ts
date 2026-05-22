@@ -21,6 +21,7 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
   const app = Fastify({ logger: false });
 
   const prismaMock = {
+    $transaction: jest.fn(),
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -59,6 +60,19 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
     reaction: {
       create: jest.fn(),
       findFirst: jest.fn(),
+      delete: jest.fn(),
+    },
+    friendship: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    friendRequest: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
       delete: jest.fn(),
     }
   };
