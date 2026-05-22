@@ -38,6 +38,8 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
       create: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
     channel: {
       create: jest.fn(),

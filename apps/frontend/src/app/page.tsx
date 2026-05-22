@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/auth';
 import { useSocketStore } from '../store/socket';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../lib/axios';
-import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus } from 'lucide-react';
+import { MessageSquare, Hash, Plus, Settings, LogOut, Loader2, UserPlus, Trash2, Shield } from 'lucide-react';
 import MessageList from '../components/Chat/MessageList';
 import MessageInput from '../components/Chat/MessageInput';
 import DirectMessageList from '../components/Chat/DirectMessageList';
@@ -85,6 +85,36 @@ export default function Index() {
     }
   });
 
+  const removeMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const targetWorkspaceId = activeWorkspaceId || workspaces?.[0]?.id;
+      const res = await api.delete(`/workspaces/${targetWorkspaceId}/members/${memberId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      refetch();
+    },
+    onError: (err: unknown) => {
+      console.error(err);
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy usuwaniu członka');
+    }
+  });
+
+  const changeRole = useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: 'admin' | 'member' }) => {
+      const targetWorkspaceId = activeWorkspaceId || workspaces?.[0]?.id;
+      const res = await api.patch(`/workspaces/${targetWorkspaceId}/members/${memberId}/role`, { role });
+      return res.data;
+    },
+    onSuccess: () => {
+      refetch();
+    },
+    onError: (err: unknown) => {
+      console.error(err);
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy zmianie roli');
+    }
+  });
+
   if (!user) return null;
 
   if (isLoading) {
@@ -99,6 +129,9 @@ export default function Index() {
   
   const activeChannel = activeWorkspace?.channels?.find((c: Channel) => c.id === activeChannelId) 
     || activeWorkspace?.channels?.[0];
+
+  const currentUserMember = activeWorkspace?.members?.find((m: WorkspaceMember) => m.userId === user?.id);
+  const isCurrentUserAdmin = currentUserMember?.role === 'admin';
 
   if (workspaces.length === 0) {
     return (
@@ -185,12 +218,14 @@ export default function Index() {
         <div className="flex-1 overflow-y-auto py-4 px-3">
           <div className="flex items-center justify-between group mb-2 cursor-pointer">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-300 transition-colors">Kanały</h3>
-            <button 
-              onClick={() => setIsCreatingChannel(true)}
-              className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            {isCurrentUserAdmin && (
+              <button 
+                onClick={() => setIsCreatingChannel(true)}
+                className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
           </div>
           
           <div className="space-y-[2px]">
@@ -303,7 +338,7 @@ export default function Index() {
               }}
               className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
             >
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                   {m.user.image ? (
                     <img src={m.user.image} alt={m.user.name} className="h-full w-full rounded-lg object-cover" />
@@ -314,7 +349,47 @@ export default function Index() {
                 {/* Kropka statusu Online/Offline */}
                 <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#1a1d21] transition-colors ${onlineUsers.includes(m.userId) ? 'bg-green-500' : 'bg-gray-500'}`}></div>
               </div>
-              <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">{m.user.name}</span>
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors truncate">{m.user.name} {m.userId === user?.id && '(Ty)'}</span>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isCurrentUserAdmin && m.userId !== user?.id ? (
+                    <select
+                      value={m.role}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        changeRole.mutate({ memberId: m.id, role: e.target.value as 'admin' | 'member' });
+                      }}
+                      disabled={changeRole.isPending}
+                      className="text-[11px] bg-gray-800 text-gray-300 border border-gray-700 rounded px-1 py-0.5 font-medium outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="member">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  ) : (
+                    m.role === 'admin' && (
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Admin</span>
+                    )
+                  )}
+
+                  {isCurrentUserAdmin && m.userId !== user?.id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Czy na pewno chcesz usunąć użytkownika ${m.user.name} z tego workspace?`)) {
+                          removeMember.mutate(m.id);
+                        }
+                      }}
+                      disabled={removeMember.isPending}
+                      className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                      title="Usuń użytkownika z workspace"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>

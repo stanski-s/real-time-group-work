@@ -20,8 +20,8 @@ describe('Channels Routes', () => {
   });
 
   describe('POST /api/channels', () => {
-    it('should create a new channel if user is a member of workspace', async () => {
-      app.db.member.findFirst.mockResolvedValueOnce({ id: 'member-1' });
+    it('should create a new channel if user is an admin of workspace', async () => {
+      app.db.member.findFirst.mockResolvedValueOnce({ id: 'member-1', role: 'admin' });
       app.db.channel.create.mockResolvedValueOnce({ id: 'channel-1', name: 'general', workspaceId: 'ws-1' });
 
       const response = await app.inject({
@@ -52,6 +52,20 @@ describe('Channels Routes', () => {
 
       expect(response.statusCode).toBe(403);
       expect(response.json()).toEqual({ error: 'Brak dostępu do tego Workspace' });
+    });
+
+    it('should return 403 if user is a member but not an admin', async () => {
+      app.db.member.findFirst.mockResolvedValueOnce({ id: 'member-1', role: 'member' });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/channels',
+        cookies: { token },
+        payload: { name: 'general', workspaceId: 'ws-1' }
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json()).toEqual({ error: 'Tylko administrator może tworzyć nowe kanały' });
     });
   });
 

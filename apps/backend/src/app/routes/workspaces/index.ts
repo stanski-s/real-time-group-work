@@ -253,4 +253,132 @@ export default async function (fastify: FastifyInstance) {
 
     return { success: true };
   });
+
+  fastify.delete('/:id/members/:memberId', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Remove a member from workspace',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          memberId: { type: 'string' }
+        },
+        required: ['id', 'memberId']
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: { success: { type: 'boolean' } }
+        },
+        403: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
+    const { id, memberId } = request.params as { id: string; memberId: string };
+    const userId = request.user.id;
+
+    // Check if the current user is an admin in this workspace
+    const currentMember = await fastify.db.member.findFirst({
+      where: { workspaceId: id, userId }
+    });
+
+    if (!currentMember || currentMember.role !== 'admin') {
+      return reply.code(403).send({ error: 'Tylko administrator może usuwać członków' });
+    }
+
+    // Check if target member exists in workspace
+    const targetMember = await fastify.db.member.findFirst({
+      where: { id: memberId, workspaceId: id }
+    });
+
+    if (!targetMember) {
+      return reply.code(404).send({ error: 'Nie znaleziono członka w tym workspace' });
+    }
+
+    await fastify.db.member.delete({
+      where: { id: memberId }
+    });
+
+    return { success: true };
+  });
+
+  fastify.patch('/:id/members/:memberId/role', {
+    schema: {
+      tags: ['Workspaces'],
+      summary: 'Change workspace member role',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          memberId: { type: 'string' }
+        },
+        required: ['id', 'memberId']
+      },
+      body: {
+        type: 'object',
+        required: ['role'],
+        properties: {
+          role: { type: 'string', enum: ['admin', 'member'] }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            member: memberSchema
+          }
+        },
+        403: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        },
+        404: {
+          type: 'object',
+          properties: { error: { type: 'string' } }
+        }
+      }
+    }
+  }, async function (request, reply) {
+    const { id, memberId } = request.params as { id: string; memberId: string };
+    const { role } = request.body as { role: 'admin' | 'member' };
+    const userId = request.user.id;
+
+    // Check if the current user is an admin in this workspace
+    const currentMember = await fastify.db.member.findFirst({
+      where: { workspaceId: id, userId }
+    });
+
+    if (!currentMember || currentMember.role !== 'admin') {
+      return reply.code(403).send({ error: 'Tylko administrator może zmieniać role' });
+    }
+
+    // Check if target member exists in workspace
+    const targetMember = await fastify.db.member.findFirst({
+      where: { id: memberId, workspaceId: id }
+    });
+
+    if (!targetMember) {
+      return reply.code(404).send({ error: 'Nie znaleziono członka w tym workspace' });
+    }
+
+    const updatedMember = await fastify.db.member.update({
+      where: { id: memberId },
+      data: { role },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } }
+      }
+    });
+
+    return { member: updatedMember };
+  });
 }

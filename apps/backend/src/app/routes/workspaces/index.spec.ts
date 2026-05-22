@@ -141,4 +141,111 @@ describe('Workspaces Routes', () => {
       expect(app.db.member.create).not.toHaveBeenCalled();
     });
   });
+
+  describe('DELETE /api/workspaces/:id/members/:memberId', () => {
+    it('should remove member if current user is an admin', async () => {
+      app.db.member.findFirst
+        .mockResolvedValueOnce({ id: 'current-member', role: 'admin' }) // current user
+        .mockResolvedValueOnce({ id: 'target-member', workspaceId: 'ws-1' }); // target member
+
+      app.db.member.delete.mockResolvedValueOnce({ id: 'target-member' });
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: '/api/workspaces/ws-1/members/target-member',
+        cookies: { token }
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ success: true });
+      expect(app.db.member.delete).toHaveBeenCalledWith({
+        where: { id: 'target-member' }
+      });
+    });
+
+    it('should return 403 if current user is not an admin', async () => {
+      app.db.member.findFirst.mockResolvedValueOnce({ id: 'current-member', role: 'member' });
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: '/api/workspaces/ws-1/members/target-member',
+        cookies: { token }
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json()).toEqual({ error: 'Tylko administrator może usuwać członków' });
+    });
+
+    it('should return 404 if target member does not exist in workspace', async () => {
+      app.db.member.findFirst
+        .mockResolvedValueOnce({ id: 'current-member', role: 'admin' })
+        .mockResolvedValueOnce(null);
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: '/api/workspaces/ws-1/members/nonexistent',
+        cookies: { token }
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toEqual({ error: 'Nie znaleziono członka w tym workspace' });
+    });
+  });
+
+  describe('PATCH /api/workspaces/:id/members/:memberId/role', () => {
+    it('should change member role if current user is an admin', async () => {
+      app.db.member.findFirst
+        .mockResolvedValueOnce({ id: 'current-member', role: 'admin' }) // current user
+        .mockResolvedValueOnce({ id: 'target-member', workspaceId: 'ws-1', role: 'member' }); // target member
+
+      const mockUpdatedMember = { id: 'target-member', role: 'admin', user: { id: 'user-2', name: 'User 2' } };
+      app.db.member.update.mockResolvedValueOnce(mockUpdatedMember);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/workspaces/ws-1/members/target-member/role',
+        cookies: { token },
+        payload: { role: 'admin' }
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ member: mockUpdatedMember });
+      expect(app.db.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'target-member' },
+          data: { role: 'admin' }
+        })
+      );
+    });
+
+    it('should return 403 if current user is not an admin', async () => {
+      app.db.member.findFirst.mockResolvedValueOnce({ id: 'current-member', role: 'member' });
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/workspaces/ws-1/members/target-member/role',
+        cookies: { token },
+        payload: { role: 'admin' }
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json()).toEqual({ error: 'Tylko administrator może zmieniać role' });
+    });
+
+    it('should return 404 if target member does not exist in workspace', async () => {
+      app.db.member.findFirst
+        .mockResolvedValueOnce({ id: 'current-member', role: 'admin' })
+        .mockResolvedValueOnce(null);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/workspaces/ws-1/members/nonexistent/role',
+        cookies: { token },
+        payload: { role: 'admin' }
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toEqual({ error: 'Nie znaleziono członka w tym workspace' });
+    });
+  });
 });

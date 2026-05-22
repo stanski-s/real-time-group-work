@@ -52,6 +52,10 @@ export default async function (fastify: FastifyInstance) {
       return reply.code(403).send({ error: 'Brak dostępu do tego Workspace' });
     }
 
+    if (member.role !== 'admin') {
+      return reply.code(403).send({ error: 'Tylko administrator może tworzyć nowe kanały' });
+    }
+
     const channel = await fastify.db.channel.create({
       data: {
         name: name.toLowerCase().replace(/\s+/g, '-'),
