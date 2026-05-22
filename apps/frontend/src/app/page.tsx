@@ -27,6 +27,7 @@ export default function Index() {
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -53,8 +54,12 @@ export default function Index() {
       const res = await api.post('/workspaces', { name });
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setNewWorkspaceName('');
+      setIsCreatingWorkspace(false);
+      if (data?.workspace?.id) {
+        setActiveWorkspaceId(data.workspace.id);
+      }
       refetch();
     },
   });
@@ -188,6 +193,13 @@ export default function Index() {
             {w.name.charAt(0).toUpperCase()}
           </button>
         ))}
+        <button
+          onClick={() => setIsCreatingWorkspace(true)}
+          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-gray-700 text-gray-500 hover:border-gray-450 hover:text-white hover:bg-gray-800 transition-all duration-200 hover:scale-105"
+          title="Stwórz nową przestrzeń roboczą"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
         <div className="mt-auto flex flex-col gap-4">
           <button onClick={() => logout.mutate()} title="Wyloguj" className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-800 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200">
             <LogOut className="h-5 w-5" />
@@ -407,6 +419,58 @@ export default function Index() {
           ))}
         </div>
       </div>
+      )}
+
+      {/* Modal tworzenia nowego Workspace */}
+      {isCreatingWorkspace && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="w-full max-w-md bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-2xl mx-4 transform transition-all animate-scale-up">
+            <h3 className="text-xl font-bold text-white mb-2 font-sans">Stwórz nową przestrzeń roboczą</h3>
+            <p className="text-sm text-gray-400 mb-6 font-sans">
+              Przestrzeń robocza to miejsce, gdzie Twój zespół komunikuje się w kanałach i wiadomościach prywatnych.
+            </p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="np. Projekt Alpha, Marketing"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                autoFocus
+                className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 shadow-inner font-sans"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newWorkspaceName.trim() && !createWorkspace.isPending) {
+                    createWorkspace.mutate(newWorkspaceName);
+                  }
+                  if (e.key === 'Escape') {
+                    setIsCreatingWorkspace(false);
+                    setNewWorkspaceName('');
+                  }
+                }}
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingWorkspace(false);
+                    setNewWorkspaceName('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-lg hover:bg-gray-700/50 transition-colors font-sans"
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="button"
+                  disabled={!newWorkspaceName.trim() || createWorkspace.isPending}
+                  onClick={() => createWorkspace.mutate(newWorkspaceName)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors font-sans"
+                >
+                  {createWorkspace.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Stwórz przestrzeń
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

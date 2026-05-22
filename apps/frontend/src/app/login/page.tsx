@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { MessageSquare } from 'lucide-react';
 import api from '../../lib/axios';
 import { useAuthStore } from '../../store/auth';
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -100,5 +100,17 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

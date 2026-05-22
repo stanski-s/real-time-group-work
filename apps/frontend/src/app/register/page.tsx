@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { MessageSquare } from 'lucide-react';
 import api from '../../lib/axios';
 import { useAuthStore } from '../../store/auth';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -115,5 +115,17 @@ export default function RegisterPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500"></div>
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }
