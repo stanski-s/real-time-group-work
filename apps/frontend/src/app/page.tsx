@@ -28,6 +28,7 @@ export default function Index() {
   const [newChannelName, setNewChannelName] = useState('');
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [workspaceViews, setWorkspaceViews] = useState<Record<string, { channelId: string | null; dmUserId: string | null }>>({});
 
   useEffect(() => {
     if (!user) {
@@ -120,6 +121,59 @@ export default function Index() {
       alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy zmianie roli');
     }
   });
+
+  // 1. Initialize active workspace and channel on first load
+  useEffect(() => {
+    if (workspaces.length > 0 && !activeWorkspaceId) {
+      const defaultWorkspaceId = workspaces[0].id;
+      setActiveWorkspaceId(defaultWorkspaceId);
+      const firstChannelId = workspaces[0].channels?.[0]?.id || null;
+      setActiveChannelId(firstChannelId);
+    }
+  }, [workspaces, activeWorkspaceId]);
+
+  // 2. Track last active channel/DM for each workspace
+  useEffect(() => {
+    if (!activeWorkspaceId) return;
+    
+    const currentWorkspace = workspaces.find((w: Workspace) => w.id === activeWorkspaceId);
+    if (!currentWorkspace) return;
+    
+    const isChannelInWorkspace = activeChannelId && currentWorkspace.channels?.some((c: Channel) => c.id === activeChannelId);
+    const isDmInWorkspace = activeDmUserId && currentWorkspace.members?.some((m: WorkspaceMember) => m.userId === activeDmUserId);
+    
+    if (isChannelInWorkspace || isDmInWorkspace || (!activeChannelId && !activeDmUserId)) {
+      setWorkspaceViews(prev => ({
+        ...prev,
+        [activeWorkspaceId]: { channelId: activeChannelId, dmUserId: activeDmUserId }
+      }));
+    }
+  }, [activeChannelId, activeDmUserId, activeWorkspaceId, workspaces]);
+
+  // 3. Restore or set default channel when switching workspace
+  useEffect(() => {
+    if (!activeWorkspaceId) return;
+    
+    const currentWorkspace = workspaces.find((w: Workspace) => w.id === activeWorkspaceId);
+    if (!currentWorkspace) return;
+    
+    const isChannelInWorkspace = activeChannelId && currentWorkspace.channels?.some((c: Channel) => c.id === activeChannelId);
+    const isDmInWorkspace = activeDmUserId && currentWorkspace.members?.some((m: WorkspaceMember) => m.userId === activeDmUserId);
+    
+    if (!isChannelInWorkspace && !isDmInWorkspace) {
+      const savedView = workspaceViews[activeWorkspaceId];
+      if (savedView) {
+        setActiveChannelId(savedView.channelId);
+        setActiveDmUserId(savedView.dmUserId);
+      } else {
+        const firstChannelId = currentWorkspace.channels?.[0]?.id || null;
+        setActiveChannelId(firstChannelId);
+        setActiveDmUserId(null);
+      }
+      setActiveThreadMessage(null);
+      setActiveThreadType(null);
+    }
+  }, [activeWorkspaceId, workspaces, workspaceViews, activeChannelId, activeDmUserId]);
 
   if (!user) return null;
 
