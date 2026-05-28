@@ -55,6 +55,7 @@ export default function Index() {
       return res.data.workspaces;
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: friendsData = { friends: [] }, refetch: refetchFriends } = useQuery({
@@ -64,6 +65,7 @@ export default function Index() {
       return res.data;
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: requestsData = { requests: [] }, refetch: refetchRequests } = useQuery({
@@ -73,6 +75,7 @@ export default function Index() {
       return res.data;
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
@@ -538,10 +541,10 @@ export default function Index() {
                         setActiveThreadMessage(null);
                         setActiveThreadType(null);
                       }}
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors border ${
                         activeDmUserId === friend.id
-                          ? 'bg-gray-800/60 text-white border border-gray-700/50'
-                          : 'text-gray-400 hover:bg-gray-800/30 hover:text-gray-200'
+                          ? 'bg-gray-800/60 text-white border-gray-700/50'
+                          : 'text-gray-400 hover:bg-gray-800/30 hover:text-gray-200 border-transparent'
                       }`}
                     >
                       <div className="relative flex-shrink-0">
