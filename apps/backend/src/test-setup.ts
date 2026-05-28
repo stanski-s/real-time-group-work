@@ -24,6 +24,7 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
     $transaction: jest.fn(),
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),

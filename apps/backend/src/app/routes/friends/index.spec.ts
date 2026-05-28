@@ -73,7 +73,7 @@ describe('Friends Routes', () => {
 
   describe('POST /api/friends/request', () => {
     it('should send a friend request successfully', async () => {
-      app.db.user.findUnique.mockResolvedValueOnce({
+      app.db.user.findFirst.mockResolvedValueOnce({
         id: 'user-2',
         email: 'friend1@example.com',
         name: 'Friend One'
@@ -106,7 +106,7 @@ describe('Friends Routes', () => {
     });
 
     it('should return 404 if email does not exist', async () => {
-      app.db.user.findUnique.mockResolvedValueOnce(null);
+      app.db.user.findFirst.mockResolvedValueOnce(null);
 
       const response = await app.inject({
         method: 'POST',
@@ -120,7 +120,7 @@ describe('Friends Routes', () => {
     });
 
     it('should return 400 if user invites themselves', async () => {
-      app.db.user.findUnique.mockResolvedValueOnce({
+      app.db.user.findFirst.mockResolvedValueOnce({
         id: 'user-1',
         email: 'test@example.com'
       });

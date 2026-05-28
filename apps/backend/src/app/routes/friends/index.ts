@@ -132,8 +132,13 @@ export default async function (fastify: FastifyInstance) {
     const { email } = request.body as { email: string };
     const userId = request.user.id;
 
-    const receiver = await fastify.db.user.findUnique({
-      where: { email }
+    const receiver = await fastify.db.user.findFirst({
+      where: {
+        email: {
+          equals: email.trim(),
+          mode: 'insensitive',
+        },
+      },
     });
 
     if (!receiver) {
