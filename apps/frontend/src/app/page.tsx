@@ -34,6 +34,8 @@ export default function Index() {
   const [friendEmail, setFriendEmail] = useState('');
   const [addFriendStatus, setAddFriendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [friendToDelete, setFriendToDelete] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -140,7 +142,7 @@ export default function Index() {
     },
     onError: (err: unknown) => {
       console.error(err);
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy tworzeniu kanału');
+      setErrorMessage((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy tworzeniu kanału');
       setIsCreatingChannel(false);
     }
   });
@@ -157,7 +159,7 @@ export default function Index() {
     },
     onError: (err: unknown) => {
       console.error(err);
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy usuwaniu członka');
+      setErrorMessage((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy usuwaniu członka');
     }
   });
 
@@ -172,7 +174,7 @@ export default function Index() {
     },
     onError: (err: unknown) => {
       console.error(err);
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy zmianie roli');
+      setErrorMessage((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Wystąpił błąd przy zmianie roli');
     }
   });
 
@@ -202,7 +204,7 @@ export default function Index() {
       refetchFriends();
     },
     onError: (err: any) => {
-      alert(err.response?.data?.error || 'Wystąpił błąd przy rozpatrywaniu zaproszenia');
+      setErrorMessage(err.response?.data?.error || 'Wystąpił błąd przy rozpatrywaniu zaproszenia');
     }
   });
 
@@ -213,9 +215,14 @@ export default function Index() {
     },
     onSuccess: () => {
       refetchFriends();
+      if (activeDmUserId && friendToDelete && activeDmUserId === friendToDelete.id) {
+        setActiveDmUserId(null);
+      }
+      setFriendToDelete(null);
     },
     onError: (err: any) => {
-      alert(err.response?.data?.error || 'Wystąpił błąd przy usuwaniu znajomego');
+      setErrorMessage(err.response?.data?.error || 'Wystąpił błąd przy usuwaniu znajomego');
+      setFriendToDelete(null);
     }
   });
 
@@ -667,9 +674,11 @@ export default function Index() {
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm(`Czy na pewno chcesz usunąć użytkownika ${friend.name} ze znajomych?`)) {
-                              removeFriend.mutate(friend.id);
-                            }
+                            setFriendToDelete({
+                              id: friend.id,
+                              name: friend.name || '',
+                              email: friend.email
+                            });
                           }}
                           className="p-2 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                           title="Usuń znajomego"
@@ -737,9 +746,11 @@ export default function Index() {
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm(`Czy na pewno chcesz usunąć użytkownika ${friend.name} ze znajomych?`)) {
-                                removeFriend.mutate(friend.id);
-                              }
+                              setFriendToDelete({
+                                id: friend.id,
+                                name: friend.name || '',
+                                email: friend.email
+                              });
                             }}
                             className="p-2 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                             title="Usuń znajomego"
@@ -1006,8 +1017,13 @@ export default function Index() {
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5 font-sans">Zarządzanie relacjami</h4>
                     <button
                       onClick={() => {
-                        if (confirm(`Czy na pewno chcesz usunąć użytkownika ${friends.find((f: any) => f.id === activeDmUserId)?.name || friends.find((f: any) => f.id === activeDmUserId)?.email} ze znajomych?`)) {
-                          removeFriend.mutate(activeDmUserId);
+                        const targetFriend = friends.find((f: any) => f.id === activeDmUserId);
+                        if (targetFriend) {
+                          setFriendToDelete({
+                            id: targetFriend.id,
+                            name: targetFriend.name || '',
+                            email: targetFriend.email
+                          });
                         }
                       }}
                       disabled={removeFriend.isPending}
@@ -1186,6 +1202,76 @@ export default function Index() {
                   <Trash2 className="h-4 w-4" />
                 )}
                 Usuń użytkownika
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal potwierdzenia usunięcia znajomego */}
+      {friendToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="w-full max-w-md bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-2xl mx-4 transform transition-all animate-scale-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                <UserX className="h-5 w-5" />
+              </div>
+              <h3 className="text-xl font-bold text-white font-sans">Usuń ze znajomych</h3>
+            </div>
+            
+            <p className="text-sm text-gray-300 mb-6 font-sans leading-relaxed">
+              Czy na pewno chcesz usunąć użytkownika <span className="font-bold text-white">{friendToDelete.name || friendToDelete.email}</span> ze znajomych? Ta operacja zakończy wasze połączenie, ale możecie wysłać ponowne zaproszenie w przyszłości.
+            </p>
+
+            <div className="flex justify-end gap-3 font-sans">
+              <button
+                type="button"
+                onClick={() => setFriendToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-lg hover:bg-gray-700/50 transition-colors"
+                disabled={removeFriend.isPending}
+              >
+                Anuluj
+              </button>
+              <button
+                type="button"
+                onClick={() => removeFriend.mutate(friendToDelete.id)}
+                disabled={removeFriend.isPending}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-500 rounded-lg disabled:opacity-50 transition-colors"
+              >
+                {removeFriend.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Usuń ze znajomych
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ogólnych błędów / powiadomień */}
+      {errorMessage && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="w-full max-w-md bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-2xl mx-4 transform transition-all animate-scale-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                <Shield className="h-5 w-5" />
+              </div>
+              <h3 className="text-xl font-bold text-white font-sans">Wystąpił błąd</h3>
+            </div>
+            
+            <p className="text-sm text-gray-300 mb-6 font-sans leading-relaxed">
+              {errorMessage}
+            </p>
+
+            <div className="flex justify-end font-sans">
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95"
+              >
+                Rozumiem
               </button>
             </div>
           </div>
