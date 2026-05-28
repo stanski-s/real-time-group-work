@@ -97,7 +97,7 @@ export default async function (fastify: FastifyInstance) {
       const dm = await fastify.db.directMessage.findUnique({ where: { id: entityId } });
       if (dm) {
         const roomKey = [dm.authorId, dm.receiverId].sort().join('_');
-        fastify.io.to(`dm_${dm.workspaceId}_${roomKey}`).emit('reaction_added', { ...reaction, entityType, entityId });
+        fastify.io.to(`dm_${roomKey}`).emit('reaction_added', { ...reaction, entityType, entityId });
       }
     }
 
@@ -147,7 +147,7 @@ export default async function (fastify: FastifyInstance) {
       const dm = await fastify.db.directMessage.findUnique({ where: { id: entityId } });
       if (dm) {
         const roomKey = [dm.authorId, dm.receiverId].sort().join('_');
-        fastify.io.to(`dm_${dm.workspaceId}_${roomKey}`).emit('reaction_removed', { id: reaction.id, entityId, entityType, emoji, userId });
+        fastify.io.to(`dm_${roomKey}`).emit('reaction_removed', { id: reaction.id, entityId, entityType, emoji, userId });
       }
     }
 

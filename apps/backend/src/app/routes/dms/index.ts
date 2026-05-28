@@ -1,4 +1,7 @@
 import { FastifyInstance } from 'fastify';
+import '../../plugins/auth';
+import '../../plugins/prisma';
+import '../../plugins/socket';
 
 const userSchema = {
   type: 'object',
@@ -15,7 +18,6 @@ const dmSchema = {
   properties: {
     id: { type: 'string' },
     content: { type: 'string' },
-    workspaceId: { type: 'string' },
     authorId: { type: 'string' },
     receiverId: { type: 'string' },
     parentId: { type: 'string', nullable: true },
@@ -46,15 +48,16 @@ const dmSchema = {
 export default async function (fastify: FastifyInstance) {
   fastify.addHook('preValidation', fastify.authenticate);
 
-  fastify.get('/:workspaceId/:userId', {
+  // 1. GET /:userId - Get global direct messages with a user
+  fastify.get('/:userId', {
     schema: {
       tags: ['DMs'],
-      summary: 'Get direct messages with a user',
+      summary: 'Get global direct messages with a user',
       security: [{ cookieAuth: [] }],
       params: {
         type: 'object',
+        required: ['userId'],
         properties: {
-          workspaceId: { type: 'string' },
           userId: { type: 'string' }
         }
       },
@@ -64,28 +67,15 @@ export default async function (fastify: FastifyInstance) {
           properties: {
             messages: { type: 'array', items: dmSchema }
           }
-        },
-        403: {
-          type: 'object',
-          properties: { error: { type: 'string' } }
         }
       }
     }
-  }, async function (request, reply) {
-    const { workspaceId, userId: otherUserId } = request.params as { workspaceId: string, userId: string };
+  }, async function (request) {
+    const { userId: otherUserId } = request.params as { userId: string };
     const myId = request.user.id;
-
-    const isMember = await fastify.db.member.findFirst({
-      where: { workspaceId, userId: myId }
-    });
-    
-    if (!isMember) {
-      return reply.code(403).send({ error: 'Brak dostępu do tego Workspace' });
-    }
 
     const messages = await fastify.db.directMessage.findMany({
       where: {
-        workspaceId,
         parentId: null,
         OR: [
           { authorId: myId, receiverId: otherUserId },
@@ -106,15 +96,16 @@ export default async function (fastify: FastifyInstance) {
     return { messages: messages.reverse() };
   });
 
-  fastify.get('/:workspaceId/thread/:messageId', {
+  // 2. GET /thread/:messageId - Get replies for a direct message thread
+  fastify.get('/thread/:messageId', {
     schema: {
       tags: ['DMs'],
       summary: 'Get replies for a direct message thread',
       security: [{ cookieAuth: [] }],
       params: {
         type: 'object',
+        required: ['messageId'],
         properties: {
-          workspaceId: { type: 'string' },
           messageId: { type: 'string' }
         }
       },
@@ -128,10 +119,10 @@ export default async function (fastify: FastifyInstance) {
       }
     }
   }, async function (request) {
-    const { workspaceId, messageId } = request.params as { workspaceId: string, messageId: string };
+    const { messageId } = request.params as { messageId: string };
     
     const replies = await fastify.db.directMessage.findMany({
-      where: { workspaceId, parentId: messageId },
+      where: { parentId: messageId },
       include: { 
         author: { select: { id: true, name: true, image: true } },
         reactions: true
@@ -142,7 +133,8 @@ export default async function (fastify: FastifyInstance) {
     return { replies };
   });
 
-  fastify.post('/:workspaceId/:userId', {
+  // 3. POST /:userId - Send a global direct message
+  fastify.post('/:userId', {
     config: {
       rateLimit: {
         max: 30,
@@ -151,12 +143,12 @@ export default async function (fastify: FastifyInstance) {
     },
     schema: {
       tags: ['DMs'],
-      summary: 'Send a direct message',
+      summary: 'Send a global direct message',
       security: [{ cookieAuth: [] }],
       params: {
         type: 'object',
+        required: ['userId'],
         properties: {
-          workspaceId: { type: 'string' },
           userId: { type: 'string' }
         }
       },
@@ -175,33 +167,20 @@ export default async function (fastify: FastifyInstance) {
         201: {
           type: 'object',
           properties: { message: dmSchema }
-        },
-        403: {
-          type: 'object',
-          properties: { error: { type: 'string' } }
         }
       }
     }
   }, async function (request, reply) {
-    const { workspaceId, userId: otherUserId } = request.params as { workspaceId: string, userId: string };
+    const { userId: otherUserId } = request.params as { userId: string };
     const { content, parentId, fileUrl, fileType, fileName } = request.body as { content: string, parentId?: string, fileUrl?: string, fileType?: string, fileName?: string };
     const myId = request.user.id;
-
-    const isMember = await fastify.db.member.findFirst({
-      where: { workspaceId, userId: myId }
-    });
-    
-    if (!isMember) {
-      return reply.code(403).send({ error: 'Brak dostępu do tego Workspace' });
-    }
 
     const message = await fastify.db.directMessage.create({
       data: {
         content,
-        workspaceId,
-        authorId: myId,
-        receiverId: otherUserId,
-        parentId: parentId || null,
+        author: { connect: { id: myId } },
+        receiver: { connect: { id: otherUserId } },
+        ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
         fileUrl,
         fileType,
         fileName
@@ -216,7 +195,7 @@ export default async function (fastify: FastifyInstance) {
     });
 
     const roomKey = [myId, otherUserId].sort().join('_');
-    const roomId = `dm_${workspaceId}_${roomKey}`;
+    const roomId = `dm_${roomKey}`;
     
     if (parentId) {
       fastify.io.to(roomId).emit('new_dm_thread_reply', message);

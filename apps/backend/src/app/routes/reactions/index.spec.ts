@@ -83,7 +83,7 @@ describe('Reactions Routes', () => {
       
       const ioMock = app.io as unknown as { to: jest.Mock; emit: jest.Mock };
       // sorted ids: user-1_user-2
-      expect(ioMock.to).toHaveBeenCalledWith('dm_ws-1_user-1_user-2');
+      expect(ioMock.to).toHaveBeenCalledWith('dm_user-1_user-2');
       expect(ioMock.emit).toHaveBeenCalledWith('reaction_removed', expect.objectContaining({ id: 'react-1' }));
     });
 

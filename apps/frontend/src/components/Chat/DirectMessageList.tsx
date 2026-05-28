@@ -9,24 +9,23 @@ import MessageItem from './MessageItem';
 import { Message } from '../../types';
 
 interface DirectMessageListProps {
-  workspaceId: string;
   otherUserId: string;
   onReply?: (msg: Message) => void;
 }
 
-export default function DirectMessageList({ workspaceId, otherUserId, onReply }: DirectMessageListProps) {
+export default function DirectMessageList({ otherUserId, onReply }: DirectMessageListProps) {
   const { socket } = useSocketStore();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: messages, isLoading } = useQuery({
-    queryKey: ['dms', workspaceId, otherUserId],
+    queryKey: ['dms', otherUserId],
     queryFn: async () => {
-      const res = await api.get(`/dms/${workspaceId}/${otherUserId}`);
+      const res = await api.get(`/dms/${otherUserId}`);
       return res.data.messages;
     },
-    enabled: !!workspaceId && !!otherUserId,
+    enabled: !!otherUserId,
   });
 
   useEffect(() => {
@@ -34,14 +33,14 @@ export default function DirectMessageList({ workspaceId, otherUserId, onReply }:
 
     const roomId = [user.id, otherUserId].sort().join('_');
 
-    socket.emit('joinDm', `${workspaceId}_${roomId}`);
+    socket.emit('joinDm', roomId);
 
     const handleNewDm = (newMessage: Message) => {
       if (
         (newMessage.authorId === user.id && newMessage.receiverId === otherUserId) ||
         (newMessage.authorId === otherUserId && newMessage.receiverId === user.id)
       ) {
-        queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
+        queryClient.setQueryData(['dms', otherUserId], (old: Message[] | undefined) => {
           if (!old) return [newMessage];
           if (old.some((m) => m.id === newMessage.id)) return old;
           return [...old, newMessage];
@@ -50,21 +49,21 @@ export default function DirectMessageList({ workspaceId, otherUserId, onReply }:
     };
 
     const handleReactionAdded = ({ entityId, emoji, userId, id }: { entityId: string, emoji: string, userId: string, id: string }) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
+      queryClient.setQueryData(['dms', otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
         return old.map((m) => m.id === entityId ? { ...m, reactions: [...(m.reactions || []), { id, emoji, userId }] } : m);
       });
     };
 
     const handleReactionRemoved = ({ entityId, id }: { entityId: string, id: string }) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
+      queryClient.setQueryData(['dms', otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
         return old.map((m) => m.id === entityId ? { ...m, reactions: m.reactions?.filter((r) => r.id !== id) } : m);
       });
     };
 
     const handleNewDmThreadReply = (message: Message) => {
-      queryClient.setQueryData(['dms', workspaceId, otherUserId], (old: Message[] | undefined) => {
+      queryClient.setQueryData(['dms', otherUserId], (old: Message[] | undefined) => {
         if (!old) return old;
         return old.map((m) => m.id === message.parentId ? { ...m, _count: { replies: (m._count?.replies || 0) + 1 } } : m);
       });
@@ -80,9 +79,9 @@ export default function DirectMessageList({ workspaceId, otherUserId, onReply }:
       socket.off('reaction_added', handleReactionAdded);
       socket.off('reaction_removed', handleReactionRemoved);
       socket.off('new_dm_thread_reply', handleNewDmThreadReply);
-      socket.emit('leaveDm', `${workspaceId}_${roomId}`);
+      socket.emit('leaveDm', roomId);
     };
-  }, [socket, workspaceId, otherUserId, user, queryClient]);
+  }, [socket, otherUserId, user, queryClient]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

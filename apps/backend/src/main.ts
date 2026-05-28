@@ -15,6 +15,7 @@ const server = Fastify({
 server.register(require('@fastify/cors'), {
   origin: 'http://localhost:3001',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 });
 
 import authPlugin from './app/plugins/auth';

@@ -28,7 +28,6 @@ model Workspace {
   slug     String    @unique
   members  Member[]
   channels Channel[]
-  directMessages DirectMessage[]
 }
 
 model Member {
@@ -92,9 +91,6 @@ model DirectMessage {
   
   receiverId  String
   receiver    User     @relation("ReceivedDMs", fields: [receiverId], references: [id])
-
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   parentId  String?
   parent    DirectMessage?  @relation("DirectThread", fields: [parentId], references: [id])

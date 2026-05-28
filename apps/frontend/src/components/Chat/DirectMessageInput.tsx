@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import api from '../../lib/axios';
 import { SendHorizontal, Paperclip, X, Bold, Italic, Strikethrough, Code, Terminal, Loader2 } from 'lucide-react';
 
-export default function DirectMessageInput({ workspaceId, otherUserId }: { workspaceId: string, otherUserId: string }) {
+export default function DirectMessageInput({ otherUserId }: { otherUserId: string }) {
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
@@ -29,7 +29,7 @@ export default function DirectMessageInput({ workspaceId, otherUserId }: { works
         const uploadRes = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         fileData = uploadRes.data;
       }
-      await api.post(`/dms/${workspaceId}/${otherUserId}`, { 
+      await api.post(`/dms/${otherUserId}`, { 
         content,
         ...(fileData ? { fileUrl: fileData.fileUrl, fileType: fileData.fileType, fileName: fileData.fileName } : {})
       });
