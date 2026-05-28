@@ -31,6 +31,7 @@ import messagesRoutes from './app/routes/messages';
 import dmsRoutes from './app/routes/dms';
 import reactionsRoutes from './app/routes/reactions';
 import uploadRoutes from './app/routes/upload';
+import friendsRoutes from './app/routes/friends';
 
 async function bootstrap() {
   await server.register(prismaPlugin);
@@ -48,6 +49,7 @@ async function bootstrap() {
   await server.register(dmsRoutes, { prefix: '/api/dms' });
   await server.register(reactionsRoutes, { prefix: '/api/reactions' });
   await server.register(uploadRoutes, { prefix: '/api/upload' });
+  await server.register(friendsRoutes, { prefix: '/api/friends' });
 
   try {
     await server.listen({ port, host });
