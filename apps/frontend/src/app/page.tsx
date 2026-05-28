@@ -470,7 +470,7 @@ export default function Index() {
                   setActiveView('workspace');
                 }}
                 className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
-                  activeView === 'workspace' && activeChannel?.id === channel.id
+                  activeView === 'workspace' && activeChannelId === channel.id
                     ? 'bg-indigo-500/10 text-indigo-300'
                     : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
                 }`}
