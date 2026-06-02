@@ -34,6 +34,7 @@ jobs:
 
     env:
       DATABASE_URL: "postgresql://admin:password123@localhost:5432/slack_db?schema=public"
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Checkout repository
@@ -46,13 +47,13 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9.8.0
+          cache: true
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
+          node-version: 22
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
