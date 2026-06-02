@@ -72,7 +72,7 @@ export default function MessageList({ channelId, onReply }: MessageListProps) {
     };
   }, [channelId, socket, joinChannel, leaveChannel, queryClient]);
 
-  if (isLoading) return <div className="text-gray-500">Ładowanie wiadomości...</div>;
+  if (isLoading) return <div className="text-gray-500">Ładowanie wiadomości…</div>;
 
   return (
     <div className="space-y-6">

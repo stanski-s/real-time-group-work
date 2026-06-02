@@ -464,22 +464,19 @@ export default function Index() {
                     setTimeout(() => setCopiedInvite(false), 2000);
                   }}
                   title={copiedInvite ? undefined : "Zaproś znajomych"} 
-                  className="relative text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-850"
+                  className="relative text-gray-400 hover:text-white transition-colors p-1.5 rounded hover:bg-gray-800/60"
                 >
                   {copiedInvite && (
-                    <div className="absolute top-full left-1/2 mt-2 px-2.5 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
-                      Skopiowano!
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-4 border-transparent border-b-cyan-600"></div>
+                    <div className="absolute top-full right-0 mt-2 px-2.5 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
+                      Skopiowano link!
+                      <div className="absolute bottom-full right-2 -mb-1 border-4 border-transparent border-b-cyan-600"></div>
                     </div>
                   )}
                   {copiedInvite ? (
-                    <Check className="h-4 w-4 text-green-400 transition-all duration-200 scale-110" />
+                    <Check className="h-4.5 w-4.5 text-green-400 transition-all duration-200 scale-110" />
                   ) : (
-                    <UserPlus className="h-4 w-4" />
+                    <UserPlus className="h-4.5 w-4.5" />
                   )}
-                </button>
-                <button className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-850">
-                  <Settings className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -1030,7 +1027,7 @@ export default function Index() {
                 setActiveThreadType(null);
               }}
             />
-          ) : activeDmUserId && activeDmUser ? (
+          ) : activeView === 'friends' && activeDmUserId && activeDmUser ? (
             /* Dedykowany prawy sidebar dla profilu użytkownika w DMs */
             <div className="w-60 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
               <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
@@ -1090,7 +1087,7 @@ export default function Index() {
                     ) : isRequestPending ? (
                       <div className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 border border-gray-700 rounded-lg text-xs font-semibold w-full justify-center">
                         <Clock className="h-3.5 w-3.5" />
-                        Zaproszenie oczekujące...
+                        Zaproszenie oczekujące…
                       </div>
                     ) : (
                       <button

@@ -89,7 +89,7 @@ export default function DirectMessageList({ otherUserId, onReply }: DirectMessag
   }, [messages]);
 
   if (isLoading) {
-    return <div className="text-gray-500 text-sm">Wczytywanie historii wiadomości...</div>;
+    return <div className="text-gray-500 text-sm">Wczytywanie historii wiadomości…</div>;
   }
 
   if (!messages || messages.length === 0) {

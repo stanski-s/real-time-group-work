@@ -138,7 +138,7 @@ export default function ThreadSidebar({
         
         <div className="flex-1 space-y-4">
           {isLoading ? (
-            <div className="text-gray-500 text-sm">Ładowanie wątku...</div>
+            <div className="text-gray-500 text-sm">Ładowanie wątku…</div>
           ) : (
             replies.map((reply: Message) => (
               <MessageItem key={reply.id} msg={reply} entityType={entityType} />

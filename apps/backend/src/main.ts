@@ -39,18 +39,23 @@ async function bootstrap() {
   await server.register(authPlugin);
   await server.register(rateLimitPlugin);
   await server.register(socketPlugin);
-  await server.register(multipartPlugin);
-  await server.register(staticPlugin);
-  await server.register(swaggerPlugin);
 
-  await server.register(authRoutes, { prefix: '/api/auth' });
-  await server.register(workspacesRoutes, { prefix: '/api/workspaces' });
-  await server.register(channelsRoutes, { prefix: '/api/channels' });
-  await server.register(messagesRoutes, { prefix: '/api/messages' });
-  await server.register(dmsRoutes, { prefix: '/api/dms' });
-  await server.register(reactionsRoutes, { prefix: '/api/reactions' });
-  await server.register(uploadRoutes, { prefix: '/api/upload' });
-  await server.register(friendsRoutes, { prefix: '/api/friends' });
+  await Promise.all([
+    server.register(multipartPlugin),
+    server.register(staticPlugin),
+    server.register(swaggerPlugin),
+  ]);
+
+  await Promise.all([
+    server.register(authRoutes, { prefix: '/api/auth' }),
+    server.register(workspacesRoutes, { prefix: '/api/workspaces' }),
+    server.register(channelsRoutes, { prefix: '/api/channels' }),
+    server.register(messagesRoutes, { prefix: '/api/messages' }),
+    server.register(dmsRoutes, { prefix: '/api/dms' }),
+    server.register(reactionsRoutes, { prefix: '/api/reactions' }),
+    server.register(uploadRoutes, { prefix: '/api/upload' }),
+    server.register(friendsRoutes, { prefix: '/api/friends' }),
+  ]);
 
   try {
     await server.listen({ port, host });

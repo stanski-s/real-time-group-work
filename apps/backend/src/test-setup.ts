@@ -92,10 +92,12 @@ export async function buildTestApp(): Promise<FastifyWithMockDB> {
     })
   );
 
-  await app.register(authPlugin);
-  await app.register(rateLimitPlugin);
-  await app.register(multipartPlugin);
-  await app.register(swaggerPlugin);
+  await Promise.all([
+    app.register(authPlugin),
+    app.register(rateLimitPlugin),
+    app.register(multipartPlugin),
+    app.register(swaggerPlugin),
+  ]);
 
   return app as unknown as FastifyWithMockDB;
 }
