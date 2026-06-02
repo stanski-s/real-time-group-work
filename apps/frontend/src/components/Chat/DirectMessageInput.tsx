@@ -94,7 +94,7 @@ export default function DirectMessageInput({ otherUserId }: { otherUserId: strin
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex flex-col rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+      <form onSubmit={handleSubmit} className="flex flex-col rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-cyan-500 focus-within:border-cyan-500 transition-all">
         
         {/* Markdown Toolbar */}
         <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-700 bg-[#1e2124] rounded-t-xl">
@@ -145,7 +145,7 @@ export default function DirectMessageInput({ otherUserId }: { otherUserId: strin
           <button
             type="submit"
             disabled={(!content.trim() && !selectedFile) || sendMessage.isPending}
-            className="mb-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+            className="mb-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors"
           >
             {sendMessage.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
           </button>

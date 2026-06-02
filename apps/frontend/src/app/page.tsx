@@ -315,7 +315,7 @@ export default function Index() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-900">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
       </div>
     );
   }
@@ -362,24 +362,24 @@ export default function Index() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
         <div className="w-full max-w-md rounded-2xl bg-gray-800 p-8 text-center shadow-2xl border border-gray-700">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/20 mb-6">
-            <MessageSquare className="h-8 w-8 text-indigo-400" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-black/45 mb-6 border border-cyan-500/25 overflow-hidden shadow-2xl shadow-cyan-500/20">
+            <img src="/TypeSpace.png" alt="TypeSpace Logo" className="h-full w-full object-cover" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Witaj w klonie Slacka!</h1>
+          <h1 className="text-2xl font-bold text-white">Witaj w TypeSpace!</h1>
           <p className="mt-2 text-gray-400">Nie należysz jeszcze do żadnej przestrzeni roboczej.</p>
           
           <div className="mt-8 space-y-4">
             <input
               type="text"
               placeholder="Nazwa Twojej nowej firmy"
-              className="w-full rounded-xl border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-xl border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               value={newWorkspaceName}
               onChange={(e) => setNewWorkspaceName(e.target.value)}
             />
             <button
               onClick={() => createWorkspace.mutate(newWorkspaceName)}
               disabled={!newWorkspaceName || createWorkspace.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-semibold text-white hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 transition-colors shadow-lg hover:shadow-cyan-500/20 active:scale-[0.99]"
             >
               {createWorkspace.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               Stwórz przestrzeń roboczą
@@ -403,7 +403,7 @@ export default function Index() {
           onClick={() => setActiveView('friends')}
           className={`relative flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200 ${
             activeView === 'friends'
-              ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-950 scale-105'
+              ? 'bg-cyan-600 text-white shadow-lg ring-2 ring-cyan-400 ring-offset-2 ring-offset-gray-950 scale-105'
               : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white hover:scale-105'
           }`}
           title="Znajomi"
@@ -428,7 +428,7 @@ export default function Index() {
             }}
             className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all duration-200 ${
               activeView === 'workspace' && activeWorkspace?.id === w.id 
-                ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-950 scale-105' 
+                ? 'bg-cyan-600 text-white shadow-lg ring-2 ring-cyan-400 ring-offset-2 ring-offset-gray-950 scale-105' 
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white hover:scale-105'
             }`}
             title={w.name}
@@ -467,9 +467,9 @@ export default function Index() {
                   className="relative text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-850"
                 >
                   {copiedInvite && (
-                    <div className="absolute top-full left-1/2 mt-2 px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 rounded-md shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
+                    <div className="absolute top-full left-1/2 mt-2 px-2.5 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
                       Skopiowano!
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-4 border-transparent border-b-indigo-600"></div>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-4 border-transparent border-b-cyan-600"></div>
                     </div>
                   )}
                   {copiedInvite ? (
@@ -511,7 +511,7 @@ export default function Index() {
                     }}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[15px] font-medium transition-colors ${
                       activeView === 'workspace' && activeChannelId === channel.id
-                        ? 'bg-indigo-500/10 text-indigo-300'
+                        ? 'bg-cyan-500/10 text-cyan-300'
                         : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
                     }`}
                   >
@@ -539,7 +539,7 @@ export default function Index() {
                       }}
                       placeholder="nowy-kanał"
                       disabled={createChannel.isPending}
-                      className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:border-indigo-500 shadow-inner"
+                      className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:border-cyan-500 shadow-inner"
                     />
                   </div>
                 )}
@@ -561,7 +561,7 @@ export default function Index() {
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                   activeDmUserId === null
-                    ? 'bg-indigo-600 text-white shadow-lg'
+                    ? 'bg-cyan-600 text-white shadow-lg'
                     : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
                 }`}
               >
@@ -592,11 +592,11 @@ export default function Index() {
                       }`}
                     >
                       <div className="relative flex-shrink-0">
-                        <div className="h-7 w-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                        <div className="h-7 w-7 rounded-lg bg-cyan-500/15 flex items-center justify-center">
                           {chat.image ? (
                             <img src={chat.image} alt={chat.name} className="h-full w-full rounded-lg object-cover" />
                           ) : (
-                            <span className="text-indigo-400 font-bold text-xs">{chat.name ? chat.name.charAt(0).toUpperCase() : chat.email.charAt(0).toUpperCase()}</span>
+                            <span className="text-cyan-400 font-bold text-xs">{chat.name ? chat.name.charAt(0).toUpperCase() : chat.email.charAt(0).toUpperCase()}</span>
                           )}
                         </div>
                         <div className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#1a1d21] ${
@@ -685,8 +685,8 @@ export default function Index() {
                 </div>
                 {friends.filter((f: any) => onlineUsers.includes(f.id)).length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
-                      <Users className="h-8 w-8 text-indigo-400/60" />
+                    <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-cyan-400/60" />
                     </div>
                     <p className="text-gray-400 text-sm font-sans">Nikt ze znajomych nie jest teraz aktywny.</p>
                   </div>
@@ -695,7 +695,7 @@ export default function Index() {
                     <div key={friend.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-855 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all duration-200 group">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                          <div className="h-10 w-10 rounded-xl bg-cyan-500/15 flex items-center justify-center font-bold text-cyan-400 text-sm">
                             {friend.image ? (
                               <img src={friend.image} alt={friend.name} className="h-full w-full rounded-xl object-cover" />
                             ) : (
@@ -746,13 +746,13 @@ export default function Index() {
                 </div>
                 {friends.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
-                      <Users className="h-8 w-8 text-indigo-400/60" />
+                    <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-cyan-400/60" />
                     </div>
                     <p className="text-gray-400 text-sm font-sans">Nie masz jeszcze żadnych znajomych.</p>
                     <button
                       onClick={() => setFriendsTab('add')}
-                      className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors font-sans"
+                      className="mt-4 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition-colors font-sans"
                     >
                       Dodaj pierwszego znajomego
                     </button>
@@ -764,7 +764,7 @@ export default function Index() {
                       <div key={friend.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-855 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all duration-200 group">
                         <div className="flex items-center gap-3">
                           <div className="relative">
-                            <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                            <div className="h-10 w-10 rounded-xl bg-cyan-500/15 flex items-center justify-center font-bold text-cyan-400 text-sm">
                               {friend.image ? (
                                 <img src={friend.image} alt={friend.name} className="h-full w-full rounded-xl object-cover" />
                               ) : (
@@ -816,8 +816,8 @@ export default function Index() {
               <div className="space-y-6 max-w-4xl">
                 {requests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
-                      <Clock className="h-8 w-8 text-indigo-400/60" />
+                    <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center mb-4">
+                      <Clock className="h-8 w-8 text-cyan-400/60" />
                     </div>
                     <p className="text-gray-400 text-sm font-sans">Brak oczekujących zaproszeń.</p>
                   </div>
@@ -832,7 +832,7 @@ export default function Index() {
                           {requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').map((req: any) => (
                             <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-800/20 border border-gray-855 hover:bg-gray-800/50 hover:border-gray-700/50 transition-all group">
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-sm">
+                                <div className="h-10 w-10 rounded-xl bg-cyan-500/15 flex items-center justify-center font-bold text-cyan-400 text-sm">
                                   {req.sender.image ? (
                                     <img src={req.sender.image} alt={req.sender.name} className="h-full w-full rounded-xl object-cover" />
                                   ) : (
@@ -934,13 +934,13 @@ export default function Index() {
                         setFriendEmail(e.target.value);
                         if (addFriendStatus) setAddFriendStatus(null);
                       }}
-                      className="w-full bg-gray-900 border border-gray-700 focus:border-indigo-500 text-gray-200 text-sm rounded-xl px-4 py-3.5 outline-none shadow-inner transition-all duration-200 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] placeholder-gray-500"
+                      className="w-full bg-gray-900 border border-gray-700 focus:border-cyan-500 text-gray-200 text-sm rounded-xl px-4 py-3.5 outline-none shadow-inner transition-all duration-200 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] placeholder-gray-500"
                       required
                     />
                     <button
                       type="submit"
                       disabled={!friendEmail.trim() || sendFriendRequest.isPending}
-                      className="absolute right-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      className="absolute right-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5"
                     >
                       {sendFriendRequest.isPending ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -981,11 +981,11 @@ export default function Index() {
               ) : activeDmUserId && activeDmUser ? (
                 <>
                   <div className="relative flex-shrink-0 mr-2">
-                    <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center">
+                    <div className="h-6 w-6 rounded bg-cyan-500/15 flex items-center justify-center">
                       {activeDmUser.image ? (
                         <img src={activeDmUser.image} alt={activeDmUser.name} className="h-full w-full rounded object-cover" />
                       ) : (
-                        <span className="text-indigo-400 font-bold text-xs">
+                        <span className="text-cyan-400 font-bold text-xs">
                           {activeDmUser.name ? activeDmUser.name.charAt(0).toUpperCase() : activeDmUser.email.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -1041,7 +1041,7 @@ export default function Index() {
             
               <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col items-center text-center space-y-4">
                 <div className="relative">
-                  <div className="h-20 w-20 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-3xl font-bold text-indigo-400">
+                  <div className="h-20 w-20 rounded-2xl bg-cyan-500/15 flex items-center justify-center text-3xl font-bold text-cyan-400">
                     {activeDmUser.image ? (
                       <img src={activeDmUser.image} alt={activeDmUser.name} className="h-full w-full rounded-2xl object-cover" />
                     ) : (
@@ -1096,7 +1096,7 @@ export default function Index() {
                       <button
                         onClick={() => sendFriendRequest.mutate(activeDmUser.email)}
                         disabled={sendFriendRequest.isPending}
-                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold w-full justify-center transition-colors"
+                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold w-full justify-center transition-colors shadow-md hover:shadow-cyan-500/20"
                       >
                         {sendFriendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
                         Wyślij zaproszenie
@@ -1127,11 +1127,11 @@ export default function Index() {
                     className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800/50 cursor-pointer transition-colors group ${activeDmUserId === m.userId ? 'bg-gray-800/50 ring-1 ring-gray-700' : ''}`}
                   >
                     <div className="relative flex-shrink-0">
-                      <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-lg bg-cyan-500/15 flex items-center justify-center">
                         {m.user.image ? (
                           <img src={m.user.image} alt={m.user.name} className="h-full w-full rounded-lg object-cover" />
                         ) : (
-                          <span className="text-indigo-400 font-bold text-sm">{m.user.name.charAt(0).toUpperCase()}</span>
+                          <span className="text-cyan-400 font-bold text-sm">{m.user.name.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
                       {/* Kropka statusu Online/Offline */}
@@ -1150,14 +1150,14 @@ export default function Index() {
                               changeRole.mutate({ memberId: m.id, role: e.target.value as 'admin' | 'member' });
                             }}
                             disabled={changeRole.isPending}
-                            className="text-[11px] bg-gray-800 text-gray-300 border border-gray-700 rounded px-1 py-0.5 font-medium outline-none focus:border-indigo-500 transition-colors"
+                            className="text-[11px] bg-gray-800 text-gray-300 border border-gray-700 rounded px-1 py-0.5 font-medium outline-none focus:border-cyan-500 transition-colors"
                           >
                             <option value="member">User</option>
                             <option value="admin">Admin</option>
                           </select>
                         ) : (
                           m.role === 'admin' && (
-                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Admin</span>
+                            <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Admin</span>
                           )
                         )}
 
@@ -1199,7 +1199,7 @@ export default function Index() {
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 autoFocus
-                className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 shadow-inner font-sans"
+                className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-cyan-500 shadow-inner font-sans"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newWorkspaceName.trim() && !createWorkspace.isPending) {
                     createWorkspace.mutate(newWorkspaceName);
@@ -1225,7 +1225,7 @@ export default function Index() {
                   type="button"
                   disabled={!newWorkspaceName.trim() || createWorkspace.isPending}
                   onClick={() => createWorkspace.mutate(newWorkspaceName)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors font-sans"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-500 rounded-lg disabled:opacity-50 disabled:hover:bg-cyan-600 transition-colors font-sans shadow-md hover:shadow-cyan-500/20"
                 >
                   {createWorkspace.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Stwórz przestrzeń
@@ -1339,7 +1339,7 @@ export default function Index() {
               <button
                 type="button"
                 onClick={() => setErrorMessage(null)}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95"
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-500 rounded-xl transition-all shadow-lg hover:shadow-cyan-500/20 active:scale-95"
               >
                 Rozumiem
               </button>

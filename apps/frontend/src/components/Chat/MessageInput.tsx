@@ -84,7 +84,7 @@ export default function MessageInput({ channelId }: MessageInputProps) {
           </button>
         </div>
       )}
-      <div className="flex flex-col rounded-xl border border-gray-600 bg-[#222529] focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-sm">
+      <div className="flex flex-col rounded-xl border border-gray-600 bg-[#222529] focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500 transition-all shadow-sm">
         
         {/* Markdown Toolbar */}
         <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-700 bg-[#1e2124] rounded-t-xl">
@@ -146,7 +146,7 @@ export default function MessageInput({ channelId }: MessageInputProps) {
             type="button"
             onClick={() => handleSubmit()}
             disabled={(!content.trim() && !selectedFile) || sendMessage.isPending}
-            className="mb-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+            className="mb-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors"
           >
             {sendMessage.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>

@@ -4,7 +4,7 @@ export const metadata = {
   title: 'TypeSpace',
   description: 'TypeSpace - Real-time collaboration platform',
   icons: {
-    icon: '/TypeSpace.jpg',
+    icon: '/TypeSpace.png',
   },
 };
 

@@ -157,7 +157,7 @@ export default function ThreadSidebar({
             </button>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="relative rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-indigo-500 transition-all flex items-end">
+        <form onSubmit={handleSubmit} className="relative rounded-xl border border-gray-700 bg-gray-800 shadow-sm focus-within:ring-1 focus-within:ring-cyan-500 transition-all flex items-end">
           <input 
             type="file" 
             ref={fileInputRef} 

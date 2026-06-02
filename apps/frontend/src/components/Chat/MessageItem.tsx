@@ -60,11 +60,11 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
         )}
       </div>
 
-      <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-indigo-500/20 flex items-center justify-center overflow-hidden">
+      <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-cyan-500/15 flex items-center justify-center overflow-hidden">
         {msg.author.image ? (
           <img src={msg.author.image} alt={msg.author.name} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-indigo-400 font-bold">{msg.author.name?.charAt(0).toUpperCase() || '?'}</span>
+          <span className="text-cyan-400 font-bold">{msg.author.name?.charAt(0).toUpperCase() || '?'}</span>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -132,7 +132,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-colors group"
               >
-                <div className="h-10 w-10 rounded bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <div className="h-10 w-10 rounded bg-cyan-500/15 flex items-center justify-center text-cyan-400">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -156,7 +156,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
                   onClick={() => toggleReaction.mutate(emoji)}
                   className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border transition-colors ${
                     hasReacted 
-                      ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-200' 
+                      ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-200' 
                       : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
                   }`}
                 >
@@ -172,7 +172,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
         {(msg._count?.replies ?? 0) > 0 && onReply && (
           <button 
             onClick={onReply}
-            className="mt-2 text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+            className="mt-2 text-xs font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
           >
             {msg._count?.replies} {msg._count?.replies === 1 ? 'odpowiedź' : 'odpowiedzi'}
           </button>
