@@ -205,4 +205,108 @@ export default async function (fastify: FastifyInstance) {
 
     return reply.code(201).send({ message });
   });
+
+  // 4. GET /conversations - Get all active DM conversations (recent chats)
+  fastify.get('/conversations', {
+    schema: {
+      tags: ['DMs'],
+      summary: 'Get all active DM conversations (recent chats)',
+      security: [{ cookieAuth: [] }],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            conversations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string', nullable: true },
+                  email: { type: 'string' },
+                  image: { type: 'string', nullable: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async function (request) {
+    const myId = request.user.id;
+
+    // Find all DMs where current user is author or receiver
+    const dms = await fastify.db.directMessage.findMany({
+      where: {
+        OR: [
+          { authorId: myId },
+          { receiverId: myId }
+        ]
+      },
+      select: {
+        authorId: true,
+        receiverId: true,
+        createdAt: true,
+        author: { select: { id: true, name: true, email: true, image: true } },
+        receiver: { select: { id: true, name: true, email: true, image: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const conversationMap = new Map<string, { id: string; name: string | null; email: string; image: string | null }>();
+
+    for (const dm of dms) {
+      const otherUser = dm.authorId === myId ? dm.receiver : dm.author;
+      if (!otherUser || otherUser.id === myId) continue;
+
+      if (!conversationMap.has(otherUser.id)) {
+        conversationMap.set(otherUser.id, {
+          id: otherUser.id,
+          name: otherUser.name,
+          email: otherUser.email,
+          image: otherUser.image
+        });
+      }
+    }
+
+    const conversations = Array.from(conversationMap.values());
+    return { conversations };
+  });
+
+  // 5. GET /user/:userId - Get details of a specific user
+  fastify.get('/user/:userId', {
+    schema: {
+      tags: ['DMs'],
+      summary: 'Get details of a specific user',
+      security: [{ cookieAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string', nullable: true },
+            email: { type: 'string' },
+            image: { type: 'string', nullable: true }
+          }
+        }
+      }
+    }
+  }, async function (request, reply) {
+    const { userId } = request.params as { userId: string };
+    const user = await fastify.db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, image: true }
+    });
+    if (!user) {
+      return reply.code(404).send({ error: 'Użytkownik nie istnieje' });
+    }
+    return user;
+  });
 }

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/axios';
 import { SendHorizontal, Paperclip, X, Bold, Italic, Strikethrough, Code, Terminal, Loader2 } from 'lucide-react';
 
 export default function DirectMessageInput({ otherUserId }: { otherUserId: string }) {
+  const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
@@ -38,6 +39,7 @@ export default function DirectMessageInput({ otherUserId }: { otherUserId: strin
       setContent('');
       setSelectedFile(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
+      queryClient.invalidateQueries({ queryKey: ['dms', 'conversations'] });
     },
   });
 

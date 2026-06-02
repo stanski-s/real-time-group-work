@@ -78,6 +78,26 @@ export default function Index() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: conversationsData = { conversations: [] }, refetch: refetchConversations } = useQuery({
+    queryKey: ['dms', 'conversations'],
+    queryFn: async () => {
+      const res = await api.get('/dms/conversations');
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: activeDmUser } = useQuery({
+    queryKey: ['users', activeDmUserId],
+    queryFn: async () => {
+      const res = await api.get(`/dms/user/${activeDmUserId}`);
+      return res.data;
+    },
+    enabled: !!activeDmUserId,
+    staleTime: 1000 * 60 * 5,
+  });
+
   useEffect(() => {
     if (!socket) return;
 
@@ -94,18 +114,24 @@ export default function Index() {
       refetchFriends();
     };
 
+    const handleNewDmGlobally = () => {
+      refetchConversations();
+    };
+
     socket.on('friend_request_received', handleFriendRequest);
     socket.on('friend_request_accepted', handleFriendRequestAccepted);
     socket.on('friend_request_declined', handleFriendRequest);
     socket.on('friendship_removed', handleFriendshipRemoved);
+    socket.on('new_dm', handleNewDmGlobally);
 
     return () => {
       socket.off('friend_request_received', handleFriendRequest);
       socket.off('friend_request_accepted', handleFriendRequestAccepted);
       socket.off('friend_request_declined', handleFriendRequest);
       socket.off('friendship_removed', handleFriendshipRemoved);
+      socket.off('new_dm', handleNewDmGlobally);
     };
-  }, [socket, refetchFriends, refetchRequests]);
+  }, [socket, refetchFriends, refetchRequests, refetchConversations]);
 
   const createWorkspace = useMutation({
     mutationFn: async (name: string) => {
@@ -304,6 +330,24 @@ export default function Index() {
 
   const friends = friendsData?.friends || [];
   const requests = requestsData?.requests || [];
+  
+  const isFriend = friends.some((f: any) => f.id === activeDmUserId);
+  const isRequestPending = requests.some((r: any) => 
+    (r.senderId === user?.id && r.receiverId === activeDmUserId && r.status === 'PENDING') ||
+    (r.senderId === activeDmUserId && r.receiverId === user?.id && r.status === 'PENDING')
+  );
+
+  const activeConversations = conversationsData?.conversations || [];
+  const conversations = [...activeConversations];
+  if (activeDmUserId && activeDmUser && !conversations.some((c: any) => c.id === activeDmUserId)) {
+    conversations.unshift({
+      id: activeDmUser.id,
+      name: activeDmUser.name,
+      email: activeDmUser.email,
+      image: activeDmUser.image
+    });
+  }
+
   const pendingReceivedCount = requests.filter((r: any) => r.receiverId === user?.id && r.status === 'PENDING').length;
 
   const handleStartChat = (friendId: string) => {
@@ -532,38 +576,38 @@ export default function Index() {
                   Wiadomości bezpośrednie
                 </h3>
                 <div className="space-y-[2px]">
-                  {friends.map((friend: any) => (
+                  {conversations.map((chat: any) => (
                     <button
-                      key={friend.id}
+                      key={chat.id}
                       onClick={() => {
-                        setActiveDmUserId(friend.id);
+                        setActiveDmUserId(chat.id);
                         setActiveChannelId(null);
                         setActiveThreadMessage(null);
                         setActiveThreadType(null);
                       }}
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors border ${
-                        activeDmUserId === friend.id
+                        activeDmUserId === chat.id
                           ? 'bg-gray-800/60 text-white border-gray-700/50'
                           : 'text-gray-400 hover:bg-gray-800/30 hover:text-gray-200 border-transparent'
                       }`}
                     >
                       <div className="relative flex-shrink-0">
                         <div className="h-7 w-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                          {friend.image ? (
-                            <img src={friend.image} alt={friend.name} className="h-full w-full rounded-lg object-cover" />
+                          {chat.image ? (
+                            <img src={chat.image} alt={chat.name} className="h-full w-full rounded-lg object-cover" />
                           ) : (
-                            <span className="text-indigo-400 font-bold text-xs">{friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()}</span>
+                            <span className="text-indigo-400 font-bold text-xs">{chat.name ? chat.name.charAt(0).toUpperCase() : chat.email.charAt(0).toUpperCase()}</span>
                           )}
                         </div>
                         <div className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#1a1d21] ${
-                          onlineUsers.includes(friend.id) ? 'bg-green-500' : 'bg-gray-500'
+                          onlineUsers.includes(chat.id) ? 'bg-green-500' : 'bg-gray-500'
                         }`} />
                       </div>
-                      <span className="truncate">{friend.name || 'Użytkownik bez nazwy'}</span>
+                      <span className="truncate">{chat.name || chat.email}</span>
                     </button>
                   ))}
-                  {friends.length === 0 && (
-                    <div className="text-[11px] text-gray-500 px-3 py-2 italic font-medium">Brak znajomych. Dodaj znajomego w panelu głównym!</div>
+                  {conversations.length === 0 && (
+                    <div className="text-[11px] text-gray-500 px-3 py-2 italic font-medium">Brak aktywnych konwersacji.</div>
                   )}
                 </div>
               </div>
@@ -934,13 +978,17 @@ export default function Index() {
                   <Hash className="h-5 w-5 text-gray-400 mr-2" />
                   <h2 className="font-bold text-white text-base">{activeChannel?.name}</h2>
                 </>
-              ) : activeDmUserId ? (
+              ) : activeDmUserId && activeDmUser ? (
                 <>
                   <div className="relative flex-shrink-0 mr-2">
                     <div className="h-6 w-6 rounded bg-indigo-500/20 flex items-center justify-center">
-                      <span className="text-indigo-400 font-bold text-xs">
-                        {friends.find((f: any) => f.id === activeDmUserId)?.name?.charAt(0).toUpperCase() || 'U'}
-                      </span>
+                      {activeDmUser.image ? (
+                        <img src={activeDmUser.image} alt={activeDmUser.name} className="h-full w-full rounded object-cover" />
+                      ) : (
+                        <span className="text-indigo-400 font-bold text-xs">
+                          {activeDmUser.name ? activeDmUser.name.charAt(0).toUpperCase() : activeDmUser.email.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#1a1d21] ${
                       onlineUsers.includes(activeDmUserId) ? 'bg-green-500' : 'bg-gray-500'
@@ -948,7 +996,7 @@ export default function Index() {
                   </div>
                   <div className="flex flex-col">
                     <h2 className="font-bold text-white text-sm leading-tight">
-                      {friends.find((f: any) => f.id === activeDmUserId)?.name || 'Użytkownik bez nazwy'}
+                      {activeDmUser.name || activeDmUser.email}
                     </h2>
                     <span className="text-[10px] text-gray-400">
                       {onlineUsers.includes(activeDmUserId) ? 'Aktywny(a)' : 'Niedostępny(a)'}
@@ -982,17 +1030,23 @@ export default function Index() {
                 setActiveThreadType(null);
               }}
             />
-          ) : activeDmUserId ? (
-            /* Dedykowany prawy sidebar dla profilu znajomego w DMs */
+          ) : activeDmUserId && activeDmUser ? (
+            /* Dedykowany prawy sidebar dla profilu użytkownika w DMs */
             <div className="w-60 flex-shrink-0 bg-[#1a1d21] border-l border-gray-800 flex flex-col z-10 shadow-lg hidden lg:flex">
               <div className="flex h-14 items-center border-b border-gray-800/50 px-4">
-                <h2 className="font-bold text-white text-base">Profil znajomego</h2>
+                <h2 className="font-bold text-white text-base">
+                  {isFriend ? 'Profil znajomego' : 'Profil użytkownika'}
+                </h2>
               </div>
             
               <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col items-center text-center space-y-4">
                 <div className="relative">
                   <div className="h-20 w-20 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-3xl font-bold text-indigo-400">
-                    {friends.find((f: any) => f.id === activeDmUserId)?.name?.charAt(0).toUpperCase() || 'U'}
+                    {activeDmUser.image ? (
+                      <img src={activeDmUser.image} alt={activeDmUser.name} className="h-full w-full rounded-2xl object-cover" />
+                    ) : (
+                      activeDmUser.name ? activeDmUser.name.charAt(0).toUpperCase() : activeDmUser.email.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#1a1d21] ${
                     onlineUsers.includes(activeDmUserId) ? 'bg-green-500' : 'bg-gray-500'
@@ -1001,7 +1055,7 @@ export default function Index() {
 
                 <div className="space-y-1">
                   <h3 className="font-bold text-white text-lg leading-tight truncate w-48">
-                    {friends.find((f: any) => f.id === activeDmUserId)?.name || 'Użytkownik bez nazwy'}
+                    {activeDmUser.name || 'Użytkownik bez nazwy'}
                   </h3>
                   <p className="text-xs text-gray-400">
                     {onlineUsers.includes(activeDmUserId) ? 'Aktywny(a)' : 'Niedostępny(a)'}
@@ -1013,28 +1067,41 @@ export default function Index() {
                 <div className="w-full space-y-3 text-left">
                   <div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">Adres e-mail</h4>
-                    <p className="text-sm text-gray-300 truncate">{friends.find((f: any) => f.id === activeDmUserId)?.email}</p>
+                    <p className="text-sm text-gray-300 truncate">{activeDmUser.email}</p>
                   </div>
                   
                   <div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5 font-sans">Zarządzanie relacjami</h4>
-                    <button
-                      onClick={() => {
-                        const targetFriend = friends.find((f: any) => f.id === activeDmUserId);
-                        if (targetFriend) {
+                    {isFriend ? (
+                      <button
+                        onClick={() => {
                           setFriendToDelete({
-                            id: targetFriend.id,
-                            name: targetFriend.name || '',
-                            email: targetFriend.email
+                            id: activeDmUser.id,
+                            name: activeDmUser.name || '',
+                            email: activeDmUser.email
                           });
-                        }
-                      }}
-                      disabled={removeFriend.isPending}
-                      className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-semibold w-full justify-center transition-colors"
-                    >
-                      {removeFriend.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
-                      Usuń ze znajomych
-                    </button>
+                        }}
+                        disabled={removeFriend.isPending}
+                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-semibold w-full justify-center transition-colors"
+                      >
+                        {removeFriend.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
+                        Usuń ze znajomych
+                      </button>
+                    ) : isRequestPending ? (
+                      <div className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 border border-gray-700 rounded-lg text-xs font-semibold w-full justify-center">
+                        <Clock className="h-3.5 w-3.5" />
+                        Zaproszenie oczekujące...
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => sendFriendRequest.mutate(activeDmUser.email)}
+                        disabled={sendFriendRequest.isPending}
+                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold w-full justify-center transition-colors"
+                      >
+                        {sendFriendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                        Wyślij zaproszenie
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

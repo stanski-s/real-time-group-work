@@ -45,6 +45,7 @@ export default function DirectMessageList({ otherUserId, onReply }: DirectMessag
           if (old.some((m) => m.id === newMessage.id)) return old;
           return [...old, newMessage];
         });
+        queryClient.invalidateQueries({ queryKey: ['dms', 'conversations'] });
       }
     };
 
