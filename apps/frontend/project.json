@@ -11,6 +11,18 @@
       "options": {
         "cwd": "{projectRoot}"
       }
+    },
+    "serve": {
+      "command": "next dev --port 3001",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "start": {
+      "command": "next start --port 3001",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }
