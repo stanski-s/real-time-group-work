@@ -26,7 +26,7 @@ test.describe('Workspaces and Channels Flow', () => {
     await page.click('button:has-text("Stwórz przestrzeń roboczą")');
 
     // Workspace should load, showing active workspace header
-    await expect(page.locator('h2')).toContainText(workspaceName);
+    await expect(page.locator('h2').first()).toContainText(workspaceName);
 
     // Create a new channel
     // Click '+' next to "Kanały" (the button with title "Dodaj kanał")

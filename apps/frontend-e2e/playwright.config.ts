@@ -31,7 +31,7 @@ export default defineConfig({
       cwd: workspaceRoot,
     },
     {
-      command: 'pnpm exec nx run frontend:dev --port 3001',
+      command: 'pnpm exec nx run frontend:dev',
       url: 'http://localhost:3001',
       reuseExistingServer: true,
       cwd: workspaceRoot,
@@ -43,7 +43,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
+    // Firefox and WebKit require additional system libraries not present on this host.
+    // To enable them, run: npx playwright install-deps
+    /* {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
@@ -51,26 +53,6 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-    },
-
-    // Uncomment for mobile browsers support
-    /* {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
     }, */
-
-    // Uncomment for branded browsers
-    /* {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    } */
   ],
 });

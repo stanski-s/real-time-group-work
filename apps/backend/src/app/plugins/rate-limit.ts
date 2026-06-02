@@ -7,8 +7,8 @@ export default fp(async (fastify) => {
     max: 100,
     timeWindow: '1 minute',
 
-    // W testach (IP 127.0.0.1) pomijamy rate limiting, żeby nie psuć testów
-    allowList: process.env.NODE_ENV === 'test' ? ['127.0.0.1', '::1', '::ffff:127.0.0.1'] : [],
+    // W testach i lokalnym developmencie pomijamy rate limiting dla localhost
+    allowList: ['127.0.0.1', '::1', '::ffff:127.0.0.1'],
 
     // Klucz identyfikujący klienta: jeśli zalogowany - po userId, inaczej - po IP
     keyGenerator: (request) => {
