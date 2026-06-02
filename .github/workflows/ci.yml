@@ -63,7 +63,7 @@ jobs:
       - name: Generate Prisma Client & Run Database Migrations
         run: |
           pnpm db:generate
-          npx prisma migrate deploy --schema=libs/database/prisma/schema.prisma
+          cd libs/database && npx prisma migrate deploy
 
       - name: Lint Code (ESLint & Prettier)
         run: pnpm exec nx affected -t lint --parallel=3
