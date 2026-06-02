@@ -14,8 +14,27 @@ permissions:
 
 jobs:
   ci:
-    name: Code Verification (Lint, Test, Build, Security)
+    name: Code Verification (Lint, Test, Build, Security, E2E)
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: slack_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: "postgresql://admin:password123@localhost:5432/slack_db?schema=public"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,6 +60,11 @@ jobs:
       - name: Initialize Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
+      - name: Generate Prisma Client & Run Database Migrations
+        run: |
+          pnpm db:generate
+          npx prisma migrate deploy --schema=libs/database/prisma/schema.prisma
+
       - name: Lint Code (ESLint & Prettier)
         run: pnpm exec nx affected -t lint --parallel=3
 
@@ -49,6 +73,12 @@ jobs:
 
       - name: Build Applications (TypeScript Compiler Check)
         run: pnpm exec nx affected -t build --parallel=3
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run E2E Tests
+        run: pnpm exec nx affected -t e2e --parallel=1
 
       - name: Run React Doctor Code Quality Scan
         run: |

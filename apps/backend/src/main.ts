@@ -40,6 +40,10 @@ async function bootstrap() {
   await server.register(rateLimitPlugin);
   await server.register(socketPlugin);
 
+  server.get('/', async () => {
+    return { message: 'Hello API' };
+  });
+
   await Promise.all([
     server.register(multipartPlugin),
     server.register(staticPlugin),
