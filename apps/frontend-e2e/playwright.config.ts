@@ -25,16 +25,14 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: 'pnpm exec nx run backend:serve',
+      command: 'echo "Using existing backend"',
       url: 'http://localhost:3000',
       reuseExistingServer: true,
-      cwd: workspaceRoot,
     },
     {
-      command: 'pnpm exec nx run frontend:dev',
+      command: 'echo "Using existing frontend"',
       url: 'http://localhost:3001',
       reuseExistingServer: true,
-      cwd: workspaceRoot,
     }
   ],
   projects: [

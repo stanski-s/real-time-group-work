@@ -575,6 +575,38 @@ export default function IndexComponent() {
                 <span>Znajomi</span>
               </button>
 
+              <button
+                onClick={() => {
+                  if (user?.id) {
+                    setActiveDmUserId(user.id);
+                    setActiveChannelId(null);
+                    setActiveThreadMessage(null);
+                    setActiveThreadType(null);
+                  }
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  activeDmUserId === user?.id
+                    ? 'bg-cyan-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                }`}
+              >
+                <div className="relative flex-shrink-0">
+                  <div className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                    activeDmUserId === user?.id ? 'bg-white/20 text-white' : 'bg-cyan-500/15 text-cyan-400'
+                  }`}>
+                    {user?.image ? (
+                      <img src={user.image} alt={user.name || ''} className="h-full w-full rounded-md object-cover" />
+                    ) : (
+                      (user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || '')
+                    )}
+                  </div>
+                  <div className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border ${
+                    activeDmUserId === user?.id ? 'border-cyan-650 bg-green-500' : 'border-[#1a1d21] bg-green-500'
+                  }`} />
+                </div>
+                <span className="truncate">{user?.name || user?.email} (Ty)</span>
+              </button>
+
               <div className="h-px bg-gray-800/60 my-2 mx-2" />
 
               <div>
@@ -582,7 +614,7 @@ export default function IndexComponent() {
                   Wiadomości bezpośrednie
                 </h3>
                 <div className="space-y-[2px]">
-                  {conversations.map((chat: any) => (
+                  {conversations.filter((chat: any) => chat.id !== user?.id).map((chat: any) => (
                     <button
                       key={chat.id}
                       onClick={() => {
@@ -612,7 +644,7 @@ export default function IndexComponent() {
                       <span className="truncate">{chat.name || chat.email}</span>
                     </button>
                   ))}
-                  {conversations.length === 0 && (
+                  {conversations.filter((chat: any) => chat.id !== user?.id).length === 0 && (
                     <div className="text-[11px] text-gray-500 px-3 py-2 italic font-medium">Brak aktywnych konwersacji.</div>
                   )}
                 </div>
@@ -925,8 +957,13 @@ export default function IndexComponent() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (friendEmail.trim() && !sendFriendRequest.isPending) {
-                      sendFriendRequest.mutate(friendEmail.trim());
+                    const trimmedEmail = friendEmail.trim();
+                    if (trimmedEmail.toLowerCase() === user?.email?.toLowerCase()) {
+                      setAddFriendStatus({ type: 'error', message: 'Nie możesz wysłać zaproszenia do samego siebie' });
+                      return;
+                    }
+                    if (trimmedEmail && !sendFriendRequest.isPending) {
+                      sendFriendRequest.mutate(trimmedEmail);
                     }
                   }}
                   className="space-y-4"
@@ -1076,39 +1113,41 @@ export default function IndexComponent() {
                     <p className="text-sm text-gray-300 truncate">{activeDmUser.email}</p>
                   </div>
                   
-                  <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5 font-sans">Zarządzanie relacjami</h4>
-                    {isFriend ? (
-                      <button
-                        onClick={() => {
-                          setFriendToDelete({
-                            id: activeDmUser.id,
-                            name: friendToDelete ? friendToDelete.name : (activeDmUser.name || ''),
-                            email: activeDmUser.email
-                          });
-                        }}
-                        disabled={removeFriend.isPending}
-                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-semibold w-full justify-center transition-colors"
-                      >
-                        {removeFriend.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
-                        Usuń ze znajomych
-                      </button>
-                    ) : isRequestPending ? (
-                      <div className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 border border-gray-700 rounded-lg text-xs font-semibold w-full justify-center">
-                        <Clock className="h-3.5 w-3.5" />
-                        Zaproszenie oczekujące…
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => sendFriendRequest.mutate(activeDmUser.email)}
-                        disabled={sendFriendRequest.isPending}
-                        className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold w-full justify-center transition-colors shadow-md hover:shadow-cyan-500/20"
-                      >
-                        {sendFriendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
-                        Wyślij zaproszenie
-                      </button>
-                    )}
-                  </div>
+                  {activeDmUserId !== user?.id && (
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5 font-sans">Zarządzanie relacjami</h4>
+                      {isFriend ? (
+                        <button
+                          onClick={() => {
+                            setFriendToDelete({
+                              id: activeDmUser.id,
+                              name: friendToDelete ? friendToDelete.name : (activeDmUser.name || ''),
+                              email: activeDmUser.email
+                            });
+                          }}
+                          disabled={removeFriend.isPending}
+                          className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-semibold w-full justify-center transition-colors"
+                        >
+                          {removeFriend.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3.5 w-3.5" />}
+                          Usuń ze znajomych
+                        </button>
+                      ) : isRequestPending ? (
+                        <div className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 border border-gray-700 rounded-lg text-xs font-semibold w-full justify-center">
+                          <Clock className="h-3.5 w-3.5" />
+                          Zaproszenie oczekujące…
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => sendFriendRequest.mutate(activeDmUser.email)}
+                          disabled={sendFriendRequest.isPending}
+                          className="mt-2 flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold w-full justify-center transition-colors shadow-md hover:shadow-cyan-500/20"
+                        >
+                          {sendFriendRequest.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                          Wyślij zaproszenie
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
