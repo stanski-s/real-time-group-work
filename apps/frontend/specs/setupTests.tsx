@@ -31,9 +31,11 @@ jest.mock('rehype-sanitize', () => {
       span: [],
     },
   };
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const noop = () => {};
   return {
     __esModule: true,
-    default: () => () => {},
+    default: () => noop,
     defaultSchema,
   };
 });

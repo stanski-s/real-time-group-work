@@ -64,12 +64,24 @@ export default function MessageInput({ channelId }: MessageInputProps) {
     const selected = text.substring(start, end) || 'tekst';
     const after = text.substring(end);
 
-    const newText = before + prefix + selected + suffix + after;
+    let finalPrefix = prefix;
+    let finalSuffix = suffix;
+
+    if (prefix.startsWith('```')) {
+      if (before.length > 0 && !before.endsWith('\n')) {
+        finalPrefix = '\n' + prefix;
+      }
+      if (after.length > 0 && !after.startsWith('\n')) {
+        finalSuffix = suffix + '\n';
+      }
+    }
+
+    const newText = before + finalPrefix + selected + finalSuffix + after;
     setContent(newText);
     
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+      textarea.setSelectionRange(start + finalPrefix.length, start + finalPrefix.length + selected.length);
     }, 0);
   };
 

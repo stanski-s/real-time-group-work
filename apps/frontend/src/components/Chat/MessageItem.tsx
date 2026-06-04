@@ -81,6 +81,7 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}  // Punkt 4: Ochrona przed XSS
             components={{
+              pre: ({ node, ...props }) => <>{props.children}</>,
               a: ({ node, ...props }) => <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />,
               p: ({ node, ...props }) => <p {...props} className="m-0 whitespace-pre-wrap" />,
               strong: ({ node, ...props }) => <strong {...props} className="font-bold text-white" />,
@@ -92,21 +93,41 @@ export default function MessageItem({ msg, entityType, onReply }: MessageItemPro
               code(props) {
                 const {children, className, node, ...rest} = props;
                 const match = /language-(\w+)/.exec(className || '');
-                return match ? (
-                  // @ts-expect-error: SyntaxHighlighter types can be mismatched with React 19
-                  <SyntaxHighlighter
-                    {...rest}
-                    PreTag="div"
-                    children={String(children).replace(/\n$/, '')}
-                    language={match[1]}
-                    style={vscDarkPlus}
-                    className="rounded-md border border-gray-700 !bg-[#1e1e1e] !my-2 text-sm scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
-                  />
-                ) : (
+                const isBlock = match || String(children).includes('\n');
+
+                if (isBlock) {
+                  const language = match ? match[1] : '';
+                  return (
+                    <div className="rounded-xl border border-gray-800 bg-[#0d0e12] my-3 overflow-hidden text-[14px]">
+                      {language && (
+                        <div className="flex items-center justify-between bg-[#16181d] px-4 py-1.5 border-b border-gray-800/80">
+                          <span className="text-xs font-semibold text-gray-400 font-mono">{language}</span>
+                        </div>
+                      )}
+                      <div className="p-3.5 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+                        {/* @ts-expect-error: SyntaxHighlighter types can be mismatched with React 19 */}
+                        <SyntaxHighlighter
+                          {...rest}
+                          PreTag="div"
+                          children={String(children).replace(/\n$/, '')}
+                          language={language || 'text'}
+                          style={vscDarkPlus}
+                          customStyle={{
+                            margin: 0,
+                            padding: 0,
+                            background: 'transparent',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
                   <code {...rest} className="bg-gray-800 text-[#ff8787] px-1.5 py-0.5 rounded text-[13px] font-mono border border-gray-700">
                     {children}
                   </code>
-                )
+                );
               }
             }}
           >
