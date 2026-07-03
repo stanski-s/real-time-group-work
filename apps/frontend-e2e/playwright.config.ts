@@ -26,13 +26,13 @@ export default defineConfig({
   webServer: [
     {
       command: 'npx nx serve backend',
-      url: 'http://localhost:3000',
+      url: 'http://127.0.0.1:3000',
       reuseExistingServer: true,
       timeout: 120 * 1000,
     },
     {
       command: 'npx nx serve frontend',
-      url: 'http://localhost:3001',
+      url: 'http://127.0.0.1:3001',
       reuseExistingServer: true,
       timeout: 120 * 1000,
     }
