@@ -27,13 +27,13 @@ export default defineConfig({
     {
       command: 'npx nx serve backend',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120 * 1000,
     },
     {
       command: 'npx nx serve frontend',
       url: 'http://localhost:3001',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120 * 1000,
     }
   ],
