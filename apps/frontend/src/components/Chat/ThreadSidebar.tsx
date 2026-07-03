@@ -37,7 +37,7 @@ export default function ThreadSidebar({
     queryFn: async () => {
       const url = entityType === 'message' 
         ? `/messages/${channelId}/thread/${message.id}` 
-        : `/dms/${workspaceId}/thread/${message.id}`;
+        : `/dms/thread/${message.id}`;
       const res = await api.get(url);
       return res.data.replies;
     }
@@ -54,7 +54,7 @@ export default function ThreadSidebar({
       }
       const url = entityType === 'message' 
         ? `/messages/${channelId}` 
-        : `/dms/${workspaceId}/${otherUserId}`;
+        : `/dms/${otherUserId}`;
       await api.post(url, { 
         content, 
         parentId: message.id,
