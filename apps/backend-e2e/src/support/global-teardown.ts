@@ -2,7 +2,12 @@ import { killPort } from '@nx/node/utils';
 /* eslint-disable */
 
 module.exports = async function () {
-  // We don't kill the port here anymore so frontend-e2e can reuse the backend server.
-  // The CI script will kill the backend process at the end.
+  if (globalThis.__SERVER_PROCESS__ && globalThis.__SERVER_PROCESS__.pid) {
+    try {
+      process.kill(-globalThis.__SERVER_PROCESS__.pid);
+    } catch (e) {
+      // ignore
+    }
+  }
   console.log(globalThis.__TEARDOWN_MESSAGE__);
 };

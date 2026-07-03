@@ -1,6 +1,6 @@
-# Slack Clone
+# Real-Time Communicator
 
-Nowoczesny klon aplikacji Slack, oferujący komunikację w czasie rzeczywistym, kanały, wiadomości prywatne, wątki i wiele innych, zbudowany w oparciu o architekturę Monorepo (Nx).
+Nowoczesna aplikacja do komunikacji w czasie rzeczywistym, oferująca pokoje rozmów (kanały), wiadomości prywatne, wątki i wiele innych, zbudowana w oparciu o architekturę Monorepo (Nx).
 
 ## 🚀 Technologie
 - **Frontend**: React, Next.js, TailwindCSS, React Query, Zustand, Socket.io-client

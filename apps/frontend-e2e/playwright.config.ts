@@ -23,18 +23,12 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'echo "Using existing backend"',
-      url: 'http://localhost:3000',
-      reuseExistingServer: true,
-    },
-    {
-      command: 'echo "Using existing frontend"',
-      url: 'http://localhost:3001',
-      reuseExistingServer: true,
-    }
-  ],
+  webServer: {
+    command: 'npx nx run-many --target=serve --projects=backend,frontend --parallel',
+    url: 'http://localhost:3001',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
   projects: [
     {
       name: 'chromium',
